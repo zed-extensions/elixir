@@ -1,0 +1,11 @@
+#
+# zed-elixir
+#
+
+*.wasm
+
+#
+# Rust
+#
+
+/target
