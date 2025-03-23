@@ -1,4 +1,4 @@
-; Macros `describe`, `test` and `property`.
+; Macros `describe`, `test`, `property`, `test_with_mock`, and `test_with_mocks`.
 ; This matches the ExUnit test style.
 (
     (call
