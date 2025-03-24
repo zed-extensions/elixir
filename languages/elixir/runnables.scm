@@ -1,8 +1,8 @@
-; Macros `describe`, `test` and `property`.
+; Macros `describe`, `test`, `property`, `test_with_mock`, and `test_with_mocks`.
 ; This matches the ExUnit test style.
 (
     (call
-        target: (identifier) @run (#any-of? @run "describe" "test" "property")
+        target: (identifier) @run (#any-of? @run "describe" "test" "property" "test_with_mock" "test_with_mocks")
     ) @_elixir-test
     (#set! tag elixir-test)
 )
