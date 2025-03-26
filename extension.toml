@@ -24,4 +24,4 @@ commit = "a2861e88a730287a60c11ea9299c033c7d076e30"
 
 [grammars.heex]
 repository = "https://github.com/phoenixframework/tree-sitter-heex"
-commit = "2e1348c3cf2c9323e87c2744796cf3f3868aa82a"
+commit = "008626a3fad379d17c81d5ed576edd9bd7a4fbf7"
