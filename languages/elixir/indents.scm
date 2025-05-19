@@ -1,6 +1,13 @@
-(call) @indent
+[
+  (after_block)
+  (anonymous_function)
+  (catch_block)
+  (do_block)
+  (else_block)
+  (rescue_block)
+  (stab_clause)
+] @indent
 
-(_ "[" "]" @end) @indent
-(_ "{" "}" @end) @indent
-(_ "(" ")" @end) @indent
-(_ "do" "end" @end) @indent
+[
+  "end"
+] @outdent
