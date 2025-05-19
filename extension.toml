@@ -20,7 +20,7 @@ languages = ["Elixir", "HEEX"]
 
 [grammars.elixir]
 repository = "https://github.com/elixir-lang/tree-sitter-elixir"
-commit = "a2861e88a730287a60c11ea9299c033c7d076e30"
+commit = "450a8194f5a66561135962cfc8d7545a27b61c4c"
 
 [grammars.heex]
 repository = "https://github.com/phoenixframework/tree-sitter-heex"
