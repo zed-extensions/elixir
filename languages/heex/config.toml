@@ -3,6 +3,9 @@ grammar = "heex"
 path_suffixes = ["heex"]
 autoclose_before = ">})"
 brackets = [
+    { start = "{", end = "}", close = true, newline = true },
+    { start = "[", end = "]", close = true, newline = true },
+    { start = "(", end = ")", close = true, newline = true },
     { start = "<", end = ">", close = true, newline = true },
 ]
 block_comment = ["<%!-- ", " --%>"]
