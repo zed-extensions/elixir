@@ -1,11 +1,3 @@
-#
-# zed-elixir
-#
-
 *.wasm
-
-#
-# Rust
-#
-
-/target
+target/
+grammars/
