@@ -45,7 +45,7 @@ impl ElixirLs {
             },
         )?;
 
-        let asset_name = "elixir-ls.zip";
+        let asset_name = format!("elixir-ls-{version}.zip", version = release.version,);
 
         let asset = release
             .assets
@@ -54,7 +54,7 @@ impl ElixirLs {
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
         let (platform, _arch) = zed::current_platform();
-        let version_dir = "elixir-ls";
+        let version_dir = format!("elixir-ls-{}", release.version);
         let extension = match platform {
             zed::Os::Mac | zed::Os::Linux => "sh",
             zed::Os::Windows => "bat",
