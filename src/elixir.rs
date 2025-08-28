@@ -4,9 +4,10 @@ use zed::lsp::{Completion, Symbol};
 use zed::{serde_json, CodeLabel, LanguageServerId};
 use zed_extension_api::{self as zed, Result};
 
-use crate::language_servers::{ElixirLs, Lexical, NextLs};
+use crate::language_servers::{ElixirLs, Expert, Lexical, NextLs};
 
 struct ElixirExtension {
+    expert: Option<Expert>,
     elixir_ls: Option<ElixirLs>,
     next_ls: Option<NextLs>,
     lexical: Option<Lexical>,
@@ -15,6 +16,7 @@ struct ElixirExtension {
 impl zed::Extension for ElixirExtension {
     fn new() -> Self {
         Self {
+            expert: None,
             elixir_ls: None,
             next_ls: None,
             lexical: None,
@@ -27,6 +29,16 @@ impl zed::Extension for ElixirExtension {
         worktree: &zed::Worktree,
     ) -> Result<zed::Command> {
         match language_server_id.as_ref() {
+            Expert::LANGUAGE_SERVER_ID => {
+                let expert = self.expert.get_or_insert_with(Expert::new);
+                let expert_binary = expert.language_server_binary(language_server_id, worktree)?;
+
+                Ok(zed::Command {
+                    command: expert_binary.path,
+                    args: expert_binary.args.unwrap_or_default(),
+                    env: Default::default(),
+                })
+            }
             ElixirLs::LANGUAGE_SERVER_ID => {
                 let elixir_ls = self.elixir_ls.get_or_insert_with(ElixirLs::new);
 
