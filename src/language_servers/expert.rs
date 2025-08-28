@@ -1,8 +1,9 @@
 use std::fs;
 
 use zed::LanguageServerId;
+use zed_extension_api::lsp::{Completion, CompletionKind, Symbol, SymbolKind};
 use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{self as zed, Result};
+use zed_extension_api::{self as zed, CodeLabel, CodeLabelSpan, Result};
 
 pub struct ExpertBinary {
     pub path: String,
@@ -129,6 +130,63 @@ impl Expert {
         Ok(ExpertBinary {
             path: binary_path,
             args: binary_args,
+        })
+    }
+
+    pub fn label_for_completion(&self, completion: Completion) -> Option<CodeLabel> {
+        match completion.kind? {
+            CompletionKind::Module
+            | CompletionKind::Class
+            | CompletionKind::Interface
+            | CompletionKind::Struct => {
+                let name = completion.label;
+
+                let detail = completion
+                    .detail
+                    .map(|detail| format!(" ({detail})"))
+                    .unwrap_or_default();
+
+                let defmodule = "defmodule ";
+                let heredoc_start = r#"@doc """\n"#;
+                let heredoc_end = r#"\n""""#;
+                let code = format!("{defmodule}{name}{heredoc_start}{detail}{heredoc_end}");
+
+                let name_start = defmodule.len();
+                let name_end = name_start + name.len();
+                let detail_start = name_end + heredoc_start.len();
+                let detail_end = detail_start + detail.len();
+
+                Some(CodeLabel {
+                    code,
+                    spans: vec![
+                        CodeLabelSpan::code_range(name_start..name_end),
+                        CodeLabelSpan::code_range(detail_start..detail_end),
+                    ],
+                    filter_range: (0..name.len()).into(),
+                })
+            }
+            _ => None,
+        }
+    }
+
+    pub fn label_for_symbol(&self, symbol: Symbol) -> Option<CodeLabel> {
+        let name = &symbol.name;
+
+        let (code, filter_range, display_range) = match symbol.kind {
+            SymbolKind::Module | SymbolKind::Class | SymbolKind::Interface | SymbolKind::Struct => {
+                let defmodule = "defmodule ";
+                let code = format!("{defmodule}{name}");
+                let filter_range = 0..name.len();
+                let display_range = defmodule.len()..defmodule.len() + name.len();
+                (code, filter_range, display_range)
+            }
+            _ => return None,
+        };
+
+        Some(CodeLabel {
+            spans: vec![CodeLabelSpan::code_range(display_range)],
+            filter_range: filter_range.into(),
+            code,
         })
     }
 }

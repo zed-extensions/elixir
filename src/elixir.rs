@@ -78,6 +78,7 @@ impl zed::Extension for ElixirExtension {
         completion: Completion,
     ) -> Option<CodeLabel> {
         match language_server_id.as_ref() {
+            Expert::LANGUAGE_SERVER_ID => self.expert.as_ref()?.label_for_completion(completion),
             ElixirLs::LANGUAGE_SERVER_ID => {
                 self.elixir_ls.as_ref()?.label_for_completion(completion)
             }
@@ -93,6 +94,7 @@ impl zed::Extension for ElixirExtension {
         symbol: Symbol,
     ) -> Option<CodeLabel> {
         match language_server_id.as_ref() {
+            Expert::LANGUAGE_SERVER_ID => self.expert.as_ref()?.label_for_symbol(symbol),
             ElixirLs::LANGUAGE_SERVER_ID => self.elixir_ls.as_ref()?.label_for_symbol(symbol),
             NextLs::LANGUAGE_SERVER_ID => self.next_ls.as_ref()?.label_for_symbol(symbol),
             Lexical::LANGUAGE_SERVER_ID => self.lexical.as_ref()?.label_for_symbol(symbol),
