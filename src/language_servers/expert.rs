@@ -118,7 +118,7 @@ impl Expert {
 
             zed::make_file_executable(&binary_path)?;
 
-            util::remove_previous_installs(Self::LANGUAGE_SERVER_ID, &version_dir)?;
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
 
         self.cached_binary_path = Some(binary_path.clone());

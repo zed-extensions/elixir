@@ -104,7 +104,7 @@ impl Lexical {
             zed::make_file_executable(&format!("{version_dir}/lexical/bin/debug_shell.sh"))?;
             zed::make_file_executable(&format!("{version_dir}/lexical/priv/port_wrapper.sh"))?;
 
-            util::remove_previous_installs(Self::LANGUAGE_SERVER_ID, &version_dir)?;
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
 
         self.cached_binary_path = Some(binary_path.clone());

@@ -2,7 +2,7 @@ use std::fs;
 
 use zed_extension_api::Result;
 
-pub(super) fn remove_previous_installs(
+pub(super) fn remove_outdated_versions(
     language_server_id: &'static str,
     version_dir: &str,
 ) -> Result<()> {
