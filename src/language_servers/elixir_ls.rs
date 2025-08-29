@@ -5,6 +5,8 @@ use zed::settings::LspSettings;
 use zed::{serde_json, CodeLabel, CodeLabelSpan, LanguageServerId};
 use zed_extension_api::{self as zed, Result};
 
+use crate::language_servers::util;
+
 pub struct ElixirLs {
     cached_binary_path: Option<String>,
 }
@@ -82,14 +84,7 @@ impl ElixirLs {
             zed::make_file_executable(&format!("{version_dir}/launch.{extension}"))?;
             zed::make_file_executable(&format!("{version_dir}/debug_adapter.{extension}"))?;
 
-            let entries =
-                fs::read_dir(".").map_err(|e| format!("failed to list working directory {e}"))?;
-            for entry in entries {
-                let entry = entry.map_err(|e| format!("failed to load directory entry {e}"))?;
-                if entry.file_name().to_str() != Some(&version_dir) {
-                    fs::remove_dir_all(entry.path()).ok();
-                }
-            }
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
 
         self.cached_binary_path = Some(binary_path.clone());
