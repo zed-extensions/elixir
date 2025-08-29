@@ -45,7 +45,11 @@ impl ElixirLs {
             },
         )?;
 
-        let asset_name = format!("elixir-ls-{version}.zip", version = release.version,);
+        let asset_name = format!(
+            "{}-{version}.zip",
+            Self::LANGUAGE_SERVER_ID,
+            version = release.version,
+        );
 
         let asset = release
             .assets
