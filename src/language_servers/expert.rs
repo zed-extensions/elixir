@@ -5,6 +5,8 @@ use zed_extension_api::lsp::{Completion, CompletionKind, Symbol, SymbolKind};
 use zed_extension_api::settings::LspSettings;
 use zed_extension_api::{self as zed, CodeLabel, CodeLabelSpan, Result};
 
+use crate::language_servers::util;
+
 pub struct ExpertBinary {
     pub path: String,
     pub args: Option<Vec<String>>,
@@ -96,7 +98,7 @@ impl Expert {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
-        let version_dir = format!("expert-{}", release.version);
+        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
         fs::create_dir_all(&version_dir).map_err(|e| format!("failed to create directory: {e}"))?;
 
         let binary_path = format!("{version_dir}/expert");
@@ -116,14 +118,7 @@ impl Expert {
 
             zed::make_file_executable(&binary_path)?;
 
-            let entries =
-                fs::read_dir(".").map_err(|e| format!("failed to list working directory {e}"))?;
-            for entry in entries {
-                let entry = entry.map_err(|e| format!("failed to load directory entry {e}"))?;
-                if entry.file_name().to_str() != Some(&version_dir) {
-                    fs::remove_dir_all(entry.path()).ok();
-                }
-            }
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
 
         self.cached_binary_path = Some(binary_path.clone());
