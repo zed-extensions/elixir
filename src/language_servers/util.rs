@@ -15,6 +15,5 @@ pub(super) fn remove_outdated_versions(
             fs::remove_dir_all(entry.path()).ok();
         }
     }
-
     Ok(())
 }
