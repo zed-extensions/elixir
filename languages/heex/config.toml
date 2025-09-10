@@ -12,5 +12,5 @@ block_comment = ["<%!-- ", " --%>"]
 scope_opt_in_language_servers = ["tailwindcss-language-server"]
 
 [overrides.string]
-word_characters = ["-"]
+completion_query_characters = ["-"]
 opt_into_language_servers = ["tailwindcss-language-server"]
