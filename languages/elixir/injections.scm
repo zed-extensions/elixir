@@ -45,3 +45,7 @@
       ]))
   (#match? @_identifier "^(attr|slot)$")
   (#set! injection.language "markdown")))
+
+; Support comment parsing languages
+((comment) @injection.content
+  (#set! injection.language "comment"))
