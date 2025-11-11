@@ -101,7 +101,9 @@ impl Expert {
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
         // Download to temporary location first so that we can generate the SHA256 checksum
-        let temp_file_path = format!("{}/temporary-download", Self::LANGUAGE_SERVER_ID);
+        let tmp_dir = format!("{}-tmp", Self::LANGUAGE_SERVER_ID);
+        fs::create_dir_all(&tmp_dir).map_err(|e| format!("failed to create directory: {e}"))?;
+        let temp_file_path = format!("{tmp_dir}/temporary-download");
 
         zed::set_language_server_installation_status(
             language_server_id,
@@ -136,10 +138,10 @@ impl Expert {
             zed::make_file_executable(&binary_path)?;
 
             util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &checksum_dir)?;
-        } else {
-            // Clean up temp file if binary already exists
-            let _ = fs::remove_file(&temp_file_path);
         }
+
+        // Clean up temp file
+        fs::remove_dir_all(&tmp_dir).ok();
 
         self.cached_binary_path = Some(binary_path.clone());
         Ok(ExpertBinary {
