@@ -5,6 +5,8 @@ use zed_extension_api::lsp::{Completion, CompletionKind, Symbol, SymbolKind};
 use zed_extension_api::settings::LspSettings;
 use zed_extension_api::{self as zed, CodeLabel, CodeLabelSpan, Result};
 
+use sha2::{Digest, Sha256};
+
 use crate::language_servers::util;
 
 pub struct ExpertBinary {
@@ -98,27 +100,45 @@ impl Expert {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
-        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
-        fs::create_dir_all(&version_dir).map_err(|e| format!("failed to create directory: {e}"))?;
+        // Download to temporary location first so that we can generate the SHA256 checksum
+        let temp_file_path = format!("{}/temporary-download", Self::LANGUAGE_SERVER_ID);
 
-        let binary_path = format!("{version_dir}/expert");
+        zed::set_language_server_installation_status(
+            language_server_id,
+            &zed::LanguageServerInstallationStatus::Downloading,
+        );
+
+        zed::download_file(
+            &asset.download_url,
+            &temp_file_path,
+            zed::DownloadedFileType::Uncompressed,
+        )
+        .map_err(|e| format!("failed to download file: {e}"))?;
+
+        // Calculate checksum of downloaded file
+        let file_contents = fs::read(&temp_file_path)
+            .map_err(|e| format!("failed to read downloaded file: {e}"))?;
+
+        let checksum = format!("{:x}", Sha256::digest(&file_contents));
+
+        // Create directory with checksum
+        let checksum_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, checksum);
+        fs::create_dir_all(&checksum_dir)
+            .map_err(|e| format!("failed to create directory: {e}"))?;
+
+        let binary_path = format!("{checksum_dir}/expert");
 
         if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
-            zed::set_language_server_installation_status(
-                language_server_id,
-                &zed::LanguageServerInstallationStatus::Downloading,
-            );
-
-            zed::download_file(
-                &asset.download_url,
-                &binary_path,
-                zed::DownloadedFileType::Uncompressed,
-            )
-            .map_err(|e| format!("failed to download file: {e}"))?;
+            // Move from temp location to final location
+            fs::rename(&temp_file_path, &binary_path)
+                .map_err(|e| format!("failed to move file: {e}"))?;
 
             zed::make_file_executable(&binary_path)?;
 
-            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &checksum_dir)?;
+        } else {
+            // Clean up temp file if binary already exists
+            let _ = fs::remove_file(&temp_file_path);
         }
 
         self.cached_binary_path = Some(binary_path.clone());

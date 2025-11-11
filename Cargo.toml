@@ -10,4 +10,5 @@ path = "src/elixir.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+sha2 = "0.10.9"
 zed_extension_api = "0.2.0"
