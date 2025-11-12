@@ -35,7 +35,7 @@ impl zed::Extension for ElixirExtension {
 
                 Ok(zed::Command {
                     command: expert_binary.path,
-                    args: expert_binary.args.unwrap_or_default(),
+                    args: expert_binary.args,
                     env: Default::default(),
                 })
             }

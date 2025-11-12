@@ -9,7 +9,7 @@ use crate::language_servers::util;
 
 pub struct ExpertBinary {
     pub path: String,
-    pub args: Option<Vec<String>>,
+    pub args: Vec<String>,
 }
 
 pub struct Expert {
@@ -35,7 +35,8 @@ impl Expert {
             .and_then(|lsp_settings| lsp_settings.binary);
         let binary_args = binary_settings
             .as_ref()
-            .and_then(|binary_settings| binary_settings.arguments.clone());
+            .and_then(|binary_settings| binary_settings.arguments.clone())
+            .unwrap_or_else(|| vec!["--stdio".to_string()]);
 
         if let Some(path) = binary_settings.and_then(|binary_settings| binary_settings.path) {
             return Ok(ExpertBinary {
