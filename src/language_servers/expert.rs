@@ -5,8 +5,6 @@ use zed_extension_api::lsp::{Completion, CompletionKind, Symbol, SymbolKind};
 use zed_extension_api::settings::LspSettings;
 use zed_extension_api::{self as zed, CodeLabel, CodeLabelSpan, Result};
 
-use sha2::{Digest, Sha256};
-
 use crate::language_servers::util;
 
 pub struct ExpertBinary {
@@ -100,48 +98,56 @@ impl Expert {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
-        // Download to temporary location first so that we can generate the SHA256 checksum
-        let tmp_dir = format!("{}-tmp", Self::LANGUAGE_SERVER_ID);
-        fs::create_dir_all(&tmp_dir).map_err(|e| format!("failed to create directory: {e}"))?;
-        let temp_file_path = format!("{tmp_dir}/temporary-download");
+        let checksum_asset = release
+            .assets
+            .iter()
+            .find(|asset| asset.name == "expert_checksums.txt")
+            .ok_or_else(|| format!("no checksums file found in release"))?;
 
-        zed::set_language_server_installation_status(
-            language_server_id,
-            &zed::LanguageServerInstallationStatus::Downloading,
-        );
-
-        zed::download_file(
-            &asset.download_url,
-            &temp_file_path,
-            zed::DownloadedFileType::Uncompressed,
-        )
-        .map_err(|e| format!("failed to download file: {e}"))?;
-
-        // Calculate checksum of downloaded file
-        let file_contents = fs::read(&temp_file_path)
-            .map_err(|e| format!("failed to read downloaded file: {e}"))?;
-
-        let checksum = format!("{:x}", Sha256::digest(&file_contents));
-
-        // Create directory with checksum
-        let checksum_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, checksum);
-        fs::create_dir_all(&checksum_dir)
+        let checksums_dir = format!("{}-checksums", Self::LANGUAGE_SERVER_ID);
+        fs::create_dir_all(&checksums_dir)
             .map_err(|e| format!("failed to create directory: {e}"))?;
 
-        let binary_path = format!("{checksum_dir}/expert");
+        let checksums_path = format!("{checksums_dir}/expert_checksums.txt");
+
+        zed::download_file(
+            &checksum_asset.download_url,
+            &checksums_path,
+            zed::DownloadedFileType::Uncompressed,
+        )
+        .map_err(|e| format!("failed to download checksums file: {e}"))?;
+
+        let checksums_content = fs::read_to_string(&checksums_path)
+            .map_err(|e| format!("failed to read checksums file: {e}"))?;
+
+        let checksum = checksums_content
+            .lines()
+            .find(|line| line.ends_with(&asset_name))
+            .and_then(|line| line.split_whitespace().next())
+            .ok_or_else(|| format!("checksum not found for {}", asset_name))?;
+
+        let expert_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, checksum);
+        fs::create_dir_all(&expert_dir).map_err(|e| format!("failed to create directory: {e}"))?;
+
+        let binary_path = format!("{expert_dir}/expert");
 
         if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
-            // Move from temp location to final location
-            fs::rename(&temp_file_path, &binary_path)
-                .map_err(|e| format!("failed to move file: {e}"))?;
+            zed::set_language_server_installation_status(
+                language_server_id,
+                &zed::LanguageServerInstallationStatus::Downloading,
+            );
+
+            zed::download_file(
+                &asset.download_url,
+                &binary_path,
+                zed::DownloadedFileType::Uncompressed,
+            )
+            .map_err(|e| format!("failed to download file: {e}"))?;
 
             zed::make_file_executable(&binary_path)?;
 
-            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &checksum_dir)?;
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &expert_dir)?;
         }
-
-        // Clean up temp file
-        fs::remove_dir_all(&tmp_dir).ok();
 
         self.cached_binary_path = Some(binary_path.clone());
         Ok(ExpertBinary {
