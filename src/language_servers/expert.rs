@@ -35,7 +35,14 @@ impl Expert {
             .and_then(|lsp_settings| lsp_settings.binary);
         let binary_args = binary_settings
             .as_ref()
-            .and_then(|binary_settings| binary_settings.arguments.clone());
+            .and_then(|binary_settings| binary_settings.arguments.clone())
+            .map(|mut args| {
+                if !args.contains(&"--stdio".to_string()) {
+                    args.push("--stdio".to_string());
+                }
+                args
+            })
+            .or_else(|| Some(vec!["--stdio".to_string()]));
 
         if let Some(path) = binary_settings.and_then(|binary_settings| binary_settings.path) {
             return Ok(ExpertBinary {
