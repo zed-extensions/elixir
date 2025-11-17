@@ -99,10 +99,44 @@ impl Expert {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
-        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
-        fs::create_dir_all(&version_dir).map_err(|e| format!("failed to create directory: {e}"))?;
+        let checksum_asset = release
+            .assets
+            .iter()
+            .find(|asset| asset.name == "expert_checksums.txt")
+            .ok_or_else(|| format!("no checksums file found in release"))?;
 
-        let binary_path = format!("{version_dir}/expert");
+        let checksums_dir = format!("{}-checksums", Self::LANGUAGE_SERVER_ID);
+        fs::create_dir_all(&checksums_dir)
+            .map_err(|e| format!("failed to create directory: {e}"))?;
+
+        let checksums_path = format!("{checksums_dir}/expert_checksums.txt");
+
+        zed::download_file(
+            &checksum_asset.download_url,
+            &checksums_path,
+            zed::DownloadedFileType::Uncompressed,
+        )
+        .map_err(|e| format!("failed to download checksums file: {e}"))?;
+
+        let checksums_content = fs::read_to_string(&checksums_path)
+            .map_err(|e| format!("failed to read checksums file: {e}"))?;
+
+        fs::remove_dir_all(&checksums_dir)
+            .map_err(|e| format!("failed to remove checksums directory: {e}"))?;
+
+        let truncated_checksum = checksums_content
+            .lines()
+            .find(|line| line.ends_with(&asset_name))
+            .and_then(|line| line.split_whitespace().next())
+            .ok_or_else(|| format!("checksum not found for {}", asset_name))?
+            .chars()
+            .take(8)
+            .collect::<String>();
+
+        let expert_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, truncated_checksum);
+        fs::create_dir_all(&expert_dir).map_err(|e| format!("failed to create directory: {e}"))?;
+
+        let binary_path = format!("{expert_dir}/expert");
 
         if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
             zed::set_language_server_installation_status(
@@ -119,7 +153,7 @@ impl Expert {
 
             zed::make_file_executable(&binary_path)?;
 
-            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &expert_dir)?;
         }
 
         self.cached_binary_path = Some(binary_path.clone());
