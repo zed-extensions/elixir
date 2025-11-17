@@ -120,13 +120,19 @@ impl Expert {
         let checksums_content = fs::read_to_string(&checksums_path)
             .map_err(|e| format!("failed to read checksums file: {e}"))?;
 
-        let checksum = checksums_content
+        fs::remove_dir_all(&checksums_dir)
+            .map_err(|e| format!("failed to remove checksums directory: {e}"))?;
+
+        let truncated_checksum = checksums_content
             .lines()
             .find(|line| line.ends_with(&asset_name))
             .and_then(|line| line.split_whitespace().next())
-            .ok_or_else(|| format!("checksum not found for {}", asset_name))?;
+            .ok_or_else(|| format!("checksum not found for {}", asset_name))?
+            .chars()
+            .take(8)
+            .collect::<String>();
 
-        let expert_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, checksum);
+        let expert_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, truncated_checksum);
         fs::create_dir_all(&expert_dir).map_err(|e| format!("failed to create directory: {e}"))?;
 
         let binary_path = format!("{expert_dir}/expert");
