@@ -19,6 +19,23 @@ pub struct Expert {
 impl Expert {
     pub const LANGUAGE_SERVER_ID: &'static str = "expert";
 
+    fn find_existing_binary() -> Option<String> {
+        fs::read_dir(".")
+            .ok()?
+            .flatten()
+            .filter_map(|entry| {
+                let path = entry.path();
+                if path.is_dir() {
+                    let binary_path = path.join("expert");
+                    if binary_path.is_file() {
+                        return Some(binary_path.to_string_lossy().to_string());
+                    }
+                }
+                None
+            })
+            .next()
+    }
+
     pub fn new() -> Self {
         Self {
             cached_binary_path: None,
@@ -65,13 +82,25 @@ impl Expert {
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
-        let release = zed::latest_github_release(
+        let release = match zed::latest_github_release(
             "elixir-lang/expert",
             zed::GithubReleaseOptions {
                 require_assets: true,
                 pre_release: true,
             },
-        )?;
+        ) {
+            Ok(release) => release,
+            Err(_) => {
+                if let Some(path) = Self::find_existing_binary() {
+                    self.cached_binary_path = Some(path.clone());
+                    return Ok(ExpertBinary {
+                        path,
+                        args: binary_args,
+                    });
+                }
+                return Err("failed to download latest github release".to_string());
+            }
+        };
 
         let (platform, arch) = zed::current_platform();
         let asset_name = format!(
