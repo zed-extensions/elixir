@@ -47,7 +47,7 @@ impl Expert {
         language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
     ) -> Result<ExpertBinary> {
-        let binary_settings = LspSettings::for_worktree("expert", worktree)
+        let binary_settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
             .ok()
             .and_then(|lsp_settings| lsp_settings.binary);
         let binary_args = binary_settings
@@ -62,7 +62,7 @@ impl Expert {
             });
         }
 
-        if let Some(path) = worktree.which("expert") {
+        if let Some(path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
             return Ok(ExpertBinary {
                 path,
                 args: binary_args,
@@ -165,7 +165,7 @@ impl Expert {
         let expert_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, truncated_checksum);
         fs::create_dir_all(&expert_dir).map_err(|e| format!("failed to create directory: {e}"))?;
 
-        let binary_path = format!("{expert_dir}/expert");
+        let binary_path = format!("{}/{}", expert_dir, Self::LANGUAGE_SERVER_ID);
 
         if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
             zed::set_language_server_installation_status(
