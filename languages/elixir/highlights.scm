@@ -1,43 +1,71 @@
-["when" "and" "or" "not" "in" "not in" "fn" "do" "end" "catch" "rescue" "after" "else"] @keyword
+; Reserved keywords
+[
+  "when"
+  "and"
+  "or"
+  "not"
+  "in"
+  "not in"
+  "fn"
+  "do"
+  "end"
+  "catch"
+  "rescue"
+  "after"
+  "else"
+] @keyword
 
+; Capture operand
 (unary_operator
   operator: "&"
   operand: (integer) @operator)
 
+; Operand identifiers
 (operator_identifier) @operator
 
+; Unary operands (`@/1, `+/1`, `-/1`, `!/1`, `^/1`, `not/1`, `&/1`, `.../1`)
 (unary_operator
   operator: _ @operator)
 
+; Binary operands (e.g. `+/2`, `++/2`, `<>/2`, `in/2`)
 (binary_operator
   operator: _ @operator)
 
+; Dot operand (`.`)
 (dot
   operator: _ @operator)
 
+; Stab operand (`->`)
 (stab_clause
   operator: _ @operator)
 
+; Special atom literals
 [
   (boolean)
   (nil)
 ] @constant
 
+; Number literals
 [
   (integer)
   (float)
 ] @number
 
+; Modules
 (alias) @type
 
+; Erlang modules
 (call
   target: (dot
     left: (atom) @type))
 
+; Char literals (e.g. `?a`, `?{`)
 (char) @constant
 
+; Escape characters (e.g. `\s`, `\n`)
 (escape_sequence) @string.escape
 
+; Atom literals
 [
   (atom)
   (quoted_atom)
@@ -45,35 +73,40 @@
   (quoted_keyword)
 ] @string.special.symbol
 
+; String literals
 [
   (string)
   (charlist)
 ] @string
 
+; String sigils
 (sigil
   (sigil_name) @__name__
   quoted_start: _ @string
   quoted_end: _ @string
-  (#match? @__name__ "^[sS]$")) @string
+  (#any-of? @__name__ "s" "S")) @string
 
+; Regex sigils
 (sigil
   (sigil_name) @__name__
   quoted_start: _ @string.regex
   quoted_end: _ @string.regex
-  (#match? @__name__ "^[rR]$")) @string.regex
+  (#any-of? @__name__ "r" "R")) @string.regex
 
+; Sigils
 (sigil
   (sigil_name) @__name__
   quoted_start: _ @string.special
   quoted_end: _ @string.special) @string.special
 
+; Regular identifiers
 (identifier) @variable
 
-(
-  (identifier) @comment.unused
-  (#match? @comment.unused "^_")
-)
+; Unused identifiers
+((identifier) @comment.unused
+  (#match? @comment.unused "^_"))
 
+; Function/macro calls
 (call
   target: [
     (identifier) @function
@@ -81,6 +114,7 @@
       right: (identifier) @function)
   ])
 
+; Function/macro definitions
 (call
   target: (identifier) @keyword
   (arguments
@@ -93,25 +127,77 @@
         operator: "|>"
         right: (identifier))
     ])
-  (#match? @keyword "^(def|defdelegate|defguard|defguardp|defmacro|defmacrop|defn|defnp|defp)$"))
+  (#any-of? @keyword
+    "def"
+    "defp"
+    "defdelegate"
+    "defguard"
+    "defguardp"
+    "defmacro"
+    "defmacrop"
+    "defn"
+    "defnp"))
 
+; Function piping
 (binary_operator
   operator: "|>"
   right: (identifier) @function)
 
+; Definition keywords
 (call
   target: (identifier) @keyword
-  (#match? @keyword "^(def|defdelegate|defexception|defguard|defguardp|defimpl|defmacro|defmacrop|defmodule|defn|defnp|defoverridable|defp|defprotocol|defstruct)$"))
+  (#any-of? @keyword
+    "def"
+    "defp"
+    "defdelegate"
+    "defoverridable"
+    "defguard"
+    "defguardp"
+    "defmacro"
+    "defmacrop"
+    "defstruct"
+    "defexception"
+    "defmodule"
+    "defprotocol"
+    "defimpl"
+    "defn"
+    "defnp"))
 
+; Kernel/special form keywords
 (call
   target: (identifier) @keyword
-  (#match? @keyword "^(alias|case|cond|else|for|if|import|quote|raise|receive|require|reraise|super|throw|try|unless|unquote|unquote_splicing|use|with)$"))
+  (#any-of? @keyword
+    "alias"
+    "case"
+    "cond"
+    "else"
+    "for"
+    "if"
+    "import"
+    "quote"
+    "raise"
+    "receive"
+    "require"
+    "reraise"
+    "super"
+    "throw"
+    "try"
+    "unless"
+    "unquote"
+    "unquote_splicing"
+    "use"
+    "with"))
 
-(
-  (identifier) @constant.builtin
-  (#match? @constant.builtin "^(__MODULE__|__DIR__|__ENV__|__CALLER__|__STACKTRACE__)$")
-)
+; Special identifiers
+((identifier) @constant.builtin
+  (#any-of? @constant.builtin
+    "__MODULE__"
+    "__DIR__"
+    "__ENV__"
+    "__CALLER__"
+    "__STACKTRACE__"))
 
+; Documentation attributes
 (unary_operator
   operator: "@" @comment.doc
   operand: (call
@@ -123,19 +209,26 @@
         (sigil)
         (boolean)
       ] @comment.doc))
-  (#match? @__attribute__ "^(moduledoc|typedoc|doc)$"))
+  (#any-of? @__attribute__
+    "moduledoc"
+    "typedoc"
+    "doc"))
 
+; Comments
 (comment) @comment
 
+; Punctuations
 [
  "%"
 ] @punctuation
 
+; Delimiters
 [
  ","
  ";"
 ] @punctuation.delimiter
 
+; Brackets
 [
   "("
   ")"
@@ -147,9 +240,11 @@
   ">>"
 ] @punctuation.bracket
 
+; String interpolations
 (interpolation "#{" @punctuation.special "}" @punctuation.special) @embedded
 
-((sigil
-  (sigil_name) @_sigil_name
-  (quoted_content) @embedded)
- (#eq? @_sigil_name "H"))
+; HEEx sigil
+(sigil
+  (sigil_name) @__name__
+  (quoted_content) @embedded
+  (#eq? @__name__ "H"))
