@@ -1,24 +1,87 @@
-; Reserved keywords
+; Punctuations
 [
-  "when"
-  "and"
-  "or"
-  "not"
-  "in"
-  "not in"
-  "fn"
-  "do"
-  "end"
-  "catch"
-  "rescue"
-  "after"
-  "else"
-] @keyword
+ "%"
+] @punctuation
 
-; Capture operand
-(unary_operator
-  operator: "&"
-  operand: (integer) @operator)
+; Delimiters
+[
+ ","
+ ";"
+] @punctuation.delimiter
+
+; Brackets
+[
+  "("
+  ")"
+  "["
+  "]"
+  "{"
+  "}"
+  "<<"
+  ">>"
+] @punctuation.bracket
+
+; Comments
+(comment) @comment
+
+; String interpolations
+(interpolation "#{" @punctuation.special "}" @punctuation.special) @embedded
+
+; Escape characters (e.g. `\s`, `\n`)
+(escape_sequence) @string.escape
+
+; Atom literals
+[
+  (atom)
+  (quoted_atom)
+  (keyword)
+  (quoted_keyword)
+] @string.special.symbol
+
+; Special atom literals
+[
+  (boolean)
+  (nil)
+] @constant
+
+; Number literals
+[
+  (integer)
+  (float)
+] @number
+
+; String literals
+[
+  (string)
+  (charlist)
+] @string
+
+; Char literals (e.g. `?a`, `?{`)
+(char) @constant
+
+; Modules
+(alias) @type
+
+; Erlang modules
+(call
+  target: (dot
+    left: (atom) @type))
+
+; Regular identifiers
+(identifier) @variable
+
+; Unused identifiers
+((identifier) @comment.unused
+  (#match? @comment.unused "^_"))
+
+; Special identifiers
+((identifier) @constant.builtin
+  (#any-of? @constant.builtin
+    "__MODULE__"
+    "__DIR__"
+    "__ENV__"
+    "__CALLER__"
+    "__STACKTRACE__"))
 
 ; Operand identifiers
 (operator_identifier) @operator
@@ -39,45 +102,16 @@
 (stab_clause
   operator: _ @operator)
 
-; Special atom literals
-[
-  (boolean)
-  (nil)
-] @constant
+; Capture operand
+(unary_operator
+  operator: "&"
+  operand: (integer) @operator)
 
-; Number literals
-[
-  (integer)
-  (float)
-] @number
-
-; Modules
-(alias) @type
-
-; Erlang modules
-(call
-  target: (dot
-    left: (atom) @type))
-
-; Char literals (e.g. `?a`, `?{`)
-(char) @constant
-
-; Escape characters (e.g. `\s`, `\n`)
-(escape_sequence) @string.escape
-
-; Atom literals
-[
-  (atom)
-  (quoted_atom)
-  (keyword)
-  (quoted_keyword)
-] @string.special.symbol
-
-; String literals
-[
-  (string)
-  (charlist)
-] @string
+; Sigils
+(sigil
+  (sigil_name) @__name__
+  quoted_start: _ @string.special
+  quoted_end: _ @string.special) @string.special
 
 ; String sigils
 (sigil
@@ -93,18 +127,11 @@
   quoted_end: _ @string.regex
   (#any-of? @__name__ "r" "R")) @string.regex
 
-; Sigils
+; HEEx sigil
 (sigil
   (sigil_name) @__name__
-  quoted_start: _ @string.special
-  quoted_end: _ @string.special) @string.special
-
-; Regular identifiers
-(identifier) @variable
-
-; Unused identifiers
-((identifier) @comment.unused
-  (#match? @comment.unused "^_"))
+  (quoted_content) @embedded
+  (#eq? @__name__ "H"))
 
 ; Function/macro calls
 (call
@@ -142,6 +169,23 @@
 (binary_operator
   operator: "|>"
   right: (identifier) @function)
+
+; Documentation attributes
+(unary_operator
+  operator: "@" @comment.doc
+  operand: (call
+    target: (identifier) @__attribute__ @comment.doc
+    (arguments
+      [
+        (string)
+        (charlist)
+        (sigil)
+        (boolean)
+      ] @comment.doc))
+  (#any-of? @__attribute__
+    "moduledoc"
+    "typedoc"
+    "doc"))
 
 ; Definition keywords
 (call
@@ -188,63 +232,19 @@
     "use"
     "with"))
 
-; Special identifiers
-((identifier) @constant.builtin
-  (#any-of? @constant.builtin
-    "__MODULE__"
-    "__DIR__"
-    "__ENV__"
-    "__CALLER__"
-    "__STACKTRACE__"))
-
-; Documentation attributes
-(unary_operator
-  operator: "@" @comment.doc
-  operand: (call
-    target: (identifier) @__attribute__ @comment.doc
-    (arguments
-      [
-        (string)
-        (charlist)
-        (sigil)
-        (boolean)
-      ] @comment.doc))
-  (#any-of? @__attribute__
-    "moduledoc"
-    "typedoc"
-    "doc"))
-
-; Comments
-(comment) @comment
-
-; Punctuations
+; Reserved keywords
 [
- "%"
-] @punctuation
-
-; Delimiters
-[
- ","
- ";"
-] @punctuation.delimiter
-
-; Brackets
-[
-  "("
-  ")"
-  "["
-  "]"
-  "{"
-  "}"
-  "<<"
-  ">>"
-] @punctuation.bracket
-
-; String interpolations
-(interpolation "#{" @punctuation.special "}" @punctuation.special) @embedded
-
-; HEEx sigil
-(sigil
-  (sigil_name) @__name__
-  (quoted_content) @embedded
-  (#eq? @__name__ "H"))
+  "when"
+  "and"
+  "or"
+  "not"
+  "in"
+  "not in"
+  "fn"
+  "do"
+  "end"
+  "catch"
+  "rescue"
+  "after"
+  "else"
+] @keyword
