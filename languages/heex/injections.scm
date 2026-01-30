@@ -47,3 +47,7 @@
   (#set! injection.language "css")
   (#set! injection.include-children)
   (#set! injection.combined))
+
+; Comment parsing languages support
+((comment) @injection.content
+  (#set! injection.language "comment"))
