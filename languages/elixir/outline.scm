@@ -4,6 +4,20 @@
   (arguments (alias) @name)
   (#any-of? @context "defmodule" "defprotocol")) @item
 
+; Protocol implementations
+(call
+  target: (identifier) @context
+  (arguments
+    (alias) @name
+    (keywords
+      (pair
+        key: (keyword) @name
+        value: [
+          (alias) @name
+          (list "[" @name "]" @name)
+        ]))?)
+  (#eq? @context "defimpl")) @item
+
 ; ExUnit setups
 (call
   target: (identifier) @context
@@ -33,7 +47,7 @@
             _* @context.extra
             ")" @context.extra)))
       ]))
-  (#any-of? @context "type" "typep" "callback")) @item
+  (#any-of? @context "type" "typep" "opaque" "callback" "macrocallback")) @item
 
 ; Function/macro definitions
 (call
@@ -42,18 +56,18 @@
     [
       (identifier) @name
       (call
-          target: (identifier) @name
-          (arguments
-              "(" @context.extra
-              _* @context.extra
-              ")" @context.extra))
+        target: (identifier) @name
+        (arguments
+          "(" @context.extra
+          _* @context.extra
+          ")" @context.extra))
       (binary_operator
         left: (call
-            target: (identifier) @name
-            (arguments
-                "(" @context.extra
-                _* @context.extra
-                ")" @context.extra))
+          target: (identifier) @name
+          (arguments
+            "(" @context.extra
+            _* @context.extra
+            ")" @context.extra))
         operator: "when")
     ])
   (#any-of? @context
@@ -65,4 +79,6 @@
     "defmacro"
     "defmacrop"
     "defn"
-    "defnp")) @item
+    "defnp"
+    "deftransform"
+    "deftransformp")) @item
