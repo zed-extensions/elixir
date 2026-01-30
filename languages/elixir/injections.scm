@@ -1,38 +1,39 @@
-; Phoenix HTML template
-
-((sigil
-  (sigil_name) @_sigil_name
-  (quoted_content) @injection.content)
- (#eq? @_sigil_name "H")
- (#set! injection.language "heex"))
-
-; Elixir Regular Expressions
-((sigil
-  (sigil_name) @_sigil_name
-  (quoted_content) @injection.content)
- (#match? @_sigil_name "^(R|r)$")
- (#set! injection.language "regex")
- (#set! injection.combined))
-
-; Elixir Markdown Documentation
+; Markdown documentation attributes
 (unary_operator
   operator: "@"
   operand: (call
-  target: ((identifier) @_identifier (#match? @_identifier "^(module|type|short)?doc$"))
-    (arguments [
-      (string (quoted_content) @injection.content)
-      (sigil (quoted_content) @injection.content)
-  ])) (#set! injection.language "markdown"))
+  target: (identifier) @__atribute__
+  (arguments [
+    (string (quoted_content) @injection.content)
+    (sigil (quoted_content) @injection.content)
+  ]))
+  (#any-of? @__atribute__ "moduledoc" "typedoc" "shortdoc" "doc")
+  (#set! injection.language "markdown"))
 
-; Jason Sigils
+; Regex sigils
 ((sigil
   (sigil_name) @_sigil_name
   (quoted_content) @injection.content)
- (#match? @_sigil_name "^(J|j)$")
- (#set! injection.language "json")
- (#set! injection.combined))
+  (#any-of? @_sigil_name "R" "r")
+  (#set! injection.language "regex")
+  (#set! injection.combined))
 
-; Phoenix Live View Component Macros
+; Phoenix HEEx template sigil
+((sigil
+  (sigil_name) @_sigil_name
+  (quoted_content) @injection.content)
+  (#eq? @_sigil_name "H")
+  (#set! injection.language "heex"))
+
+; Jason sigils
+((sigil
+  (sigil_name) @_sigil_name
+  (quoted_content) @injection.content)
+  (#any-of? @_sigil_name "J" "j")
+  (#set! injection.language "json")
+  (#set! injection.combined))
+
+; Phoenix LiveView Component Macros
 (call
   (identifier) @_identifier
   (arguments
@@ -43,9 +44,9 @@
         (string (quoted_content) @injection.content)
         (sigil (quoted_content) @injection.content)
       ]))
-  (#match? @_identifier "^(attr|slot)$")
+  (#any-of? @_identifier "attr" "slot")
   (#set! injection.language "markdown")))
 
-; Support comment parsing languages
+; Comment parsing languages support
 ((comment) @injection.content
   (#set! injection.language "comment"))

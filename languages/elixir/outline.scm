@@ -1,18 +1,22 @@
+; Module/protocol definitions
 (call
   target: (identifier) @context
   (arguments (alias) @name)
-  (#match? @context "^(defmodule|defprotocol)$")) @item
+  (#any-of? @context "defmodule" "defprotocol")) @item
 
+; ExUnit setups
 (call
   target: (identifier) @context
   (arguments (_) @name)?
-  (#match? @context "^(setup|setup_all)$")) @item
+  (#any-of? @context "setup" "setup_all")) @item
 
+; ExUnit tests
 (call
   target: (identifier) @context
   (arguments (string) @name)
-  (#match? @context "^(describe|test)$")) @item
+  (#any-of? @context "describe" "test")) @item
 
+; Typespec attributes
 (unary_operator
   operator: "@" @name
   operand: (call
@@ -28,11 +32,10 @@
             "(" @context.extra
             _* @context.extra
             ")" @context.extra)))
-      ]
-    )
-)
-(#match? @context "^(callback|type|typep)$")) @item
+      ]))
+  (#any-of? @context "type" "typep" "callback")) @item
 
+; Function/macro definitions
 (call
   target: (identifier) @context
   (arguments
@@ -53,4 +56,13 @@
                 ")" @context.extra))
         operator: "when")
     ])
-  (#match? @context "^(def|defp|defdelegate|defguard|defguardp|defmacro|defmacrop|defn|defnp)$")) @item
+  (#any-of? @context
+    "def"
+    "defp"
+    "defdelegate"
+    "defguard"
+    "defguardp"
+    "defmacro"
+    "defmacrop"
+    "defn"
+    "defnp")) @item
