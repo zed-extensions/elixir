@@ -1,4 +1,4 @@
-name = "HEEX"
+name = "HEEx"
 grammar = "heex"
 path_suffixes = ["heex"]
 autoclose_before = ">})"
