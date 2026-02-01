@@ -34,20 +34,39 @@
 (unary_operator
   operator: "@" @name
   operand: (call
-  target: (identifier) @context
+    target: (identifier) @context
     (arguments
       [
+        (identifier) @name
         (binary_operator
           left: (identifier) @name)
         (binary_operator
+          left: (binary_operator
+            left: (identifier) @name)
+          operator: "when")
+        (binary_operator
           left: (call
-          target: (identifier) @name
-          (arguments
-            "(" @context.extra
-            _* @context.extra
-            ")" @context.extra)))
+            target: (identifier) @name
+            (arguments
+              "(" @context.extra
+              _* @context.extra
+              ")" @context.extra)))
+        (binary_operator
+          left: (binary_operator
+            left: (call
+              target: (identifier) @name
+              (arguments
+                "(" @context.extra
+                _* @context.extra
+                ")" @context.extra)))
+          operator: "when")
       ]))
-  (#any-of? @context "type" "typep" "opaque" "callback" "macrocallback")) @item
+  (#any-of? @context
+    "type"
+    "typep"
+    "opaque"
+    "callback"
+    "macrocallback")) @item
 
 ; Function/macro definitions
 (call
