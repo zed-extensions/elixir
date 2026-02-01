@@ -6,7 +6,7 @@
 
 ; Anonymous function definitions
 (anonymous_function
-  (stab_clause right: (body) @function.inside)+) @function.around
+  (stab_clause)* @function.inside) @function.around
 
 ; Function definitions
 (call
@@ -34,7 +34,7 @@
     (#eq? @_identifier "defdelegate"))
   (arguments
     (_)
-    (keywords (pair)* @function.inside)?)?) @function.around
+    (keywords)? @function.inside)?) @function.around
 
 ; Guard definitions
 (call
@@ -64,6 +64,5 @@
         (string (quoted_content) @comment.inside)
         (charlist (quoted_content) @comment.inside)
         (sigil (quoted_content) @comment.inside)
-        (keywords (pair)* @comment.inside)
         (_) @comment.inside
       ]))) @comment.around
