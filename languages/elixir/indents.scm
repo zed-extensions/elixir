@@ -6,8 +6,10 @@
   (else_block)
   (rescue_block)
   (stab_clause)
+  (bitstring)
 ] @indent
 
 [
+  ">>"
   "end"
 ] @outdent
