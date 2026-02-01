@@ -20,8 +20,8 @@
 
 ; Expressions live within HTML tags, and do not need to be combined
 ;     <link href={ Routes.static_path(..) } />
-; note that we include children, because `expression_value` may consist
-; of multiple nodes, when the value contains { and }
+; Note that we include children because `expression_value` may consist
+; of multiple nodes when the value contains { and }
 ((expression (expression_value) @injection.content)
   (#set! injection.language "elixir")
   (#set! injection.include-children))

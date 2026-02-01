@@ -2,7 +2,7 @@
 (call
   target: ((identifier) @_identifier
     (#any-of? @_identifier "defmodule" "defprotocol" "defimpl"))
-  (do_block "do" (_)* @class.inside  "end")) @class.around
+  (do_block "do" (_)* @class.inside "end")) @class.around
 
 ; Anonymous function definitions
 (anonymous_function
