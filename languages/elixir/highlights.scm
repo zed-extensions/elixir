@@ -65,7 +65,10 @@
 ; Erlang modules
 (call
   target: (dot
-    left: (atom) @type))
+    left: [
+      (atom)
+      (quoted_atom)
+    ] @type))
 
 ; Regular identifiers
 (identifier) @variable
@@ -83,63 +86,103 @@
     "__CALLER__"
     "__STACKTRACE__"))
 
-; Operand identifiers
+; Operator identifiers
 (operator_identifier) @operator
 
-; Unary operands (`@/1, `+/1`, `-/1`, `!/1`, `^/1`, `not/1`, `&/1`, `.../1`)
+; Unary operators (`@/1, `+/1`, `-/1`, `!/1`, `^/1`, `not/1`, `&/1`, `.../1`)
 (unary_operator
   operator: _ @operator)
 
-; Binary operands (e.g. `+/2`, `++/2`, `<>/2`, `in/2`)
+; Binary operators (e.g. `+/2`, `++/2`, `<>/2`, `in/2`)
 (binary_operator
   operator: _ @operator)
 
-; Dot operand (`.`)
+; Dot operator (`.`)
 (dot
   operator: _ @operator)
 
-; Stab operand (`->`)
+; Stab clause operator (`->`)
 (stab_clause
   operator: _ @operator)
 
 ; Capture operand
 (unary_operator
   operator: "&"
-  operand: (integer) @operator)
+  operand: [
+    (integer) @operator
+    (binary_operator
+      left: [
+        (identifier) @function
+        (call target: (dot left: (_) right: (identifier) @function))
+      ]
+      operator: "/"
+      right: (integer))
+  ])
 
 ; Sigils
 (sigil
-  (sigil_name) @__name__
+  (sigil_name) @string.special
   quoted_start: _ @string.special
   quoted_end: _ @string.special) @string.special
 
-; String sigils
+; String/charlist sigils
 (sigil
-  (sigil_name) @__name__
+  (sigil_name) @_sigil_name @string
   quoted_start: _ @string
   quoted_end: _ @string
-  (#any-of? @__name__ "s" "S")) @string
+  (#any-of? @_sigil_name "C" "c" "S" "s")) @string
 
 ; Regex sigils
 (sigil
-  (sigil_name) @__name__
+  (sigil_name) @_sigil_name @string.regex
   quoted_start: _ @string.regex
   quoted_end: _ @string.regex
-  (#any-of? @__name__ "r" "R")) @string.regex
+  (#any-of? @_sigil_name "R" "r")) @string.regex
 
 ; HEEx sigil
 (sigil
-  (sigil_name) @__name__
+  (sigil_name) @string.special
   (quoted_content) @embedded
-  (#eq? @__name__ "H"))
+  (#eq? @string.special "H"))
 
 ; Function/macro calls
 (call
   target: [
     (identifier) @function
-    (dot
-      right: (identifier) @function)
+    (dot right: (identifier) @function)
   ])
+
+; Map dot field access
+(call
+  target: (dot
+    right: [
+      (identifier)
+      (string)
+    ] @property)
+  .)
+
+; Remote function/macro calls without parentheses
+(call
+  target: (dot
+    left: [
+      (alias)
+      (atom)
+      (quoted_atom)
+    ]
+    right: (identifier) @function)
+  .)
+
+; Piping into a local function/macro that has no parentheses
+(binary_operator
+  operator: "|>"
+  right: (identifier) @function)
+
+; Piping into a map field/variable holding a module that has no parentheses
+(binary_operator
+  operator: "|>"
+  right: (call
+    target: (dot
+      right: (identifier) @function)))
 
 ; Function/macro definitions
 (call
@@ -150,9 +193,10 @@
       (binary_operator
         left: (identifier) @function
         operator: "when")
+      ; Targets the function definition for piping in the Kernel module
       (binary_operator
         operator: "|>"
-        right: (identifier))
+        right: (identifier) @variable)
     ])
   (#any-of? @keyword
     "def"
@@ -163,29 +207,97 @@
     "defmacro"
     "defmacrop"
     "defn"
-    "defnp"))
+    "defnp"
+    "deftransform"
+    "deftransformp"))
 
-; Function piping
-(binary_operator
-  operator: "|>"
-  right: (identifier) @function)
+; Module attributes
+(unary_operator
+  operator: "@" @attribute
+  operand: [
+    (identifier) @attribute
+    (call
+      target: (identifier) @attribute)
+    (boolean) @attribute
+    (nil) @attribute
+  ])
 
-; Documentation attributes
+; Doc attributes
 (unary_operator
   operator: "@" @comment.doc
-  operand: (call
-    target: (identifier) @__attribute__ @comment.doc
-    (arguments
-      [
-        (string)
-        (charlist)
-        (sigil)
-        (boolean)
-      ] @comment.doc))
-  (#any-of? @__attribute__
+  operand: [
+    (identifier) @_identifier @comment.doc
+    (call
+      target: (identifier) @_identifier @comment.doc)
+    ]
+  (#any-of? @_identifier
+    "deprecated"
     "moduledoc"
     "typedoc"
+    "shortdoc"
     "doc"))
+
+; Typespec attributes
+(unary_operator
+  operator: "@" @enum
+  operand: [
+    (identifier) @_identifier @enum
+    (call
+      target: (identifier) @_identifier @enum)
+    ]
+  (#any-of? @_identifier
+    "type"
+    "typep"
+    "opaque"
+    "spec"
+    "callback"
+    "macrocallback"))
+
+; Doc attribute arguments
+(unary_operator
+  operator: "@"
+  operand: (call
+    target: (identifier) @_identifier @comment.doc
+    (arguments
+      [
+        (string) @comment.doc
+        (charlist) @comment.doc
+        (boolean) @comment.doc
+        (sigil
+          (sigil_name) @_sigil_name @comment.doc
+          quoted_start: _ @comment.doc
+          quoted_end: _ @comment.doc
+          (#any-of? @_sigil_name "C" "c" "S" "s"))
+      ] @comment.doc))
+  (#any-of? @_identifier
+    "deprecated"
+    "moduledoc"
+    "typedoc"
+    "shortdoc"
+    "doc"))
+
+; Typespec attribute arguments
+(unary_operator
+  operator: "@"
+  operand: (call
+    target: (identifier) @enum
+    (arguments
+      [
+        (identifier) @function
+        (binary_operator
+          left: (identifier) @function)
+        (binary_operator
+          left: (binary_operator
+            left: (identifier) @function)
+          operator: "when")
+      ]))
+  (#any-of? @enum
+    "type"
+    "typep"
+    "opaque"
+    "spec"
+    "callback"
+    "macrocallback"))
 
 ; Definition keywords
 (call
@@ -201,11 +313,15 @@
     "defmacrop"
     "defstruct"
     "defexception"
+    "defrecord"
+    "defrecordp"
     "defmodule"
     "defprotocol"
     "defimpl"
     "defn"
-    "defnp"))
+    "defnp"
+    "deftransform"
+    "deftransformp"))
 
 ; Kernel/special form keywords
 (call
