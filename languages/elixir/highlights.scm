@@ -105,20 +105,6 @@
 (stab_clause
   operator: _ @operator)
 
-; Capture operand
-(unary_operator
-  operator: "&"
-  operand: [
-    (integer) @operator
-    (binary_operator
-      left: [
-        (identifier) @function
-        (call target: (dot left: (_) right: (identifier) @function))
-      ]
-      operator: "/"
-      right: (integer))
-  ])
-
 ; Sigils
 (sigil
   (sigil_name) @string.special
@@ -145,7 +131,7 @@
   (quoted_content) @embedded
   (#eq? @string.special "H"))
 
-; Function/macro calls
+; Function/macro calls (with parentheses)
 (call
   target: [
     (identifier) @function
@@ -171,6 +157,43 @@
     ]
     right: (identifier) @function)
   .)
+
+; Parameter placeholders when capturing anonymous functions
+(unary_operator
+  operator: "&" @variable.parameter
+  operand: (integer) @variable.parameter)
+
+; Capture local functions
+(unary_operator
+  operator: "&"
+  operand: [
+    (identifier) @function
+    (binary_operator
+      left: (identifier) @function
+      operator: "/")
+  ])
+
+; Capture remote Erlang functions
+(unary_operator
+  operator: "&"
+  operand: [
+    (atom) @type
+    (quoted_atom) @type
+  ])
+
+; Capture functions from a map field/variable holding a module
+(unary_operator
+  operator: "&"
+  operand: [
+    (call
+      target: (dot
+        right: (identifier) @function))
+    (binary_operator
+      left: (call
+        target: (dot
+          right: (identifier) @function))
+      operator: "/")
+  ])
 
 ; Piping into a local function/macro that has no parentheses
 (binary_operator
