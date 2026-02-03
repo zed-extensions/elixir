@@ -177,9 +177,9 @@
 (unary_operator
   operator: "&"
   operand: [
-    (atom) @type
-    (quoted_atom) @type
-  ])
+    (atom)
+    (quoted_atom)
+  ] @type)
 
 ; Capture functions from a map field/variable holding a module
 (unary_operator
@@ -199,6 +199,14 @@
 (binary_operator
   operator: "|>"
   right: (identifier) @function)
+
+; Piping into a remote Erlang function
+(binary_operator
+  operator: "|>"
+  right: [
+    (atom)
+    (quoted_atom)
+  ] @type)
 
 ; Piping into a map field/variable holding a module that has no parentheses
 (binary_operator
