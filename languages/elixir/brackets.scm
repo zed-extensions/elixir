@@ -18,6 +18,15 @@
   "do" @open
   "end" @close)
 
+(call
+  (arguments
+    "(" @open
+    ")" @close))
+
+(anonymous_function
+  "fn" @open
+  "end" @close)
+
 (interpolation
   "#{" @open
   "}" @close
