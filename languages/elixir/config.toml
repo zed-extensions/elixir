@@ -7,8 +7,12 @@ brackets = [
     { start = "{", end = "}", close = true, newline = true },
     { start = "[", end = "]", close = true, newline = true },
     { start = "(", end = ")", close = true, newline = true },
+    { start = "do", end = "end", close = false, newline = true, not_in = ["string", "comment"] },
+    { start = "fn", end = "end", close = false, newline = true, not_in = ["string", "comment"] },
+    { start = "<<", end = ">>", close = false, newline = true },
     { start = "\"\"\"", end = "\n\"\"\"", close = true, newline = true, not_in = ["string", "comment"] },
     { start = "\"", end = "\"", close = true, newline = false, not_in = ["string", "comment"] },
+    { start = "'''", end = "\n'''", close = true, newline = true, not_in = ["string", "comment"] },
     { start = "'", end = "'", close = true, newline = false, not_in = ["string", "comment"] },
 ]
 tab_size = 2
