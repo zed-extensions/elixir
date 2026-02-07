@@ -1,56 +1,103 @@
+; Module/protocol definitions
 (call
   target: (identifier) @context
   (arguments (alias) @name)
-  (#match? @context "^(defmodule|defprotocol)$")) @item
+  (#any-of? @context "defmodule" "defprotocol")) @item
 
+; Protocol implementations
+(call
+  target: (identifier) @context
+  (arguments
+    (alias) @name
+    (keywords
+      (pair
+        key: (keyword) @name
+        value: [
+          (alias) @name
+          (list "[" @name "]" @name)
+        ]))?)
+  (#eq? @context "defimpl")) @item
+
+; ExUnit setups
 (call
   target: (identifier) @context
   (arguments (_) @name)?
-  (#match? @context "^(setup|setup_all)$")) @item
+  (#any-of? @context "setup" "setup_all")) @item
 
+; ExUnit tests
 (call
   target: (identifier) @context
   (arguments (string) @name)
-  (#match? @context "^(describe|test)$")) @item
+  (#any-of? @context "describe" "test")) @item
 
+; Typespec attributes
 (unary_operator
   operator: "@" @name
   operand: (call
-  target: (identifier) @context
+    target: (identifier) @context
     (arguments
       [
+        (identifier) @name
         (binary_operator
           left: (identifier) @name)
         (binary_operator
+          left: (binary_operator
+            left: (identifier) @name)
+          operator: "when")
+        (binary_operator
           left: (call
-          target: (identifier) @name
-          (arguments
-            "(" @context.extra
-            _* @context.extra
-            ")" @context.extra)))
-      ]
-    )
-)
-(#match? @context "^(callback|type|typep)$")) @item
+            target: (identifier) @name
+            (arguments
+              "(" @context.extra
+              _* @context.extra
+              ")" @context.extra)))
+        (binary_operator
+          left: (binary_operator
+            left: (call
+              target: (identifier) @name
+              (arguments
+                "(" @context.extra
+                _* @context.extra
+                ")" @context.extra)))
+          operator: "when")
+      ]))
+  (#any-of? @context
+    "type"
+    "typep"
+    "opaque"
+    "callback"
+    "macrocallback")) @item
 
+; Function/macro definitions
 (call
   target: (identifier) @context
   (arguments
     [
       (identifier) @name
       (call
-          target: (identifier) @name
-          (arguments
-              "(" @context.extra
-              _* @context.extra
-              ")" @context.extra))
+        target: (identifier) @name
+        (arguments
+          "(" @context.extra
+          _* @context.extra
+          ")" @context.extra))
       (binary_operator
         left: (call
-            target: (identifier) @name
-            (arguments
-                "(" @context.extra
-                _* @context.extra
-                ")" @context.extra))
+          target: (identifier) @name
+          (arguments
+            "(" @context.extra
+            _* @context.extra
+            ")" @context.extra))
         operator: "when")
     ])
-  (#match? @context "^(def|defp|defdelegate|defguard|defguardp|defmacro|defmacrop|defn|defnp)$")) @item
+  (#any-of? @context
+    "def"
+    "defp"
+    "defdelegate"
+    "defguard"
+    "defguardp"
+    "defmacro"
+    "defmacrop"
+    "defn"
+    "defnp"
+    "deftransform"
+    "deftransformp")) @item
