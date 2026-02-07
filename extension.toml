@@ -8,19 +8,19 @@ repository = "https://github.com/zed-extensions/elixir"
 
 [language_servers.expert]
 name = "Expert"
-languages = ["Elixir", "HEEX"]
+languages = ["Elixir", "HEEx"]
 
 [language_servers.elixir-ls]
 name = "ElixirLS"
-languages = ["Elixir", "HEEX"]
+languages = ["Elixir", "HEEx"]
 
 [language_servers.next-ls]
 name = "Next LS"
-languages = ["Elixir", "HEEX"]
+languages = ["Elixir", "HEEx"]
 
 [language_servers.lexical]
 name = "Lexical"
-languages = ["Elixir", "HEEX"]
+languages = ["Elixir", "HEEx"]
 
 [grammars.elixir]
 repository = "https://github.com/elixir-lang/tree-sitter-elixir"
