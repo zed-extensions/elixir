@@ -1,51 +1,75 @@
-; Phoenix HTML template
-
-((sigil
-  (sigil_name) @_sigil_name
-  (quoted_content) @injection.content)
- (#eq? @_sigil_name "H")
- (#set! injection.language "heex"))
-
-; Elixir Regular Expressions
-((sigil
-  (sigil_name) @_sigil_name
-  (quoted_content) @injection.content)
- (#match? @_sigil_name "^(R|r)$")
- (#set! injection.language "regex")
- (#set! injection.combined))
-
-; Elixir Markdown Documentation
+; Markdown documentation attributes
 (unary_operator
   operator: "@"
   operand: (call
-  target: ((identifier) @_identifier (#match? @_identifier "^(module|type|short)?doc$"))
-    (arguments [
-      (string (quoted_content) @injection.content)
-      (sigil (quoted_content) @injection.content)
-  ])) (#set! injection.language "markdown"))
+  target: (identifier) @_identifier
+  (arguments [
+    (string (quoted_content) @injection.content)
+    (sigil
+      (sigil_name) @_sigil_name
+      (quoted_content) @injection.content
+      (#any-of? @_sigil_name "S" "s"))
+    (keywords
+      (pair
+        key: ((keyword) @_keyword (#eq? @_keyword "deprecated: "))
+        value: [
+          (string (quoted_content) @injection.content)
+          (sigil
+            (sigil_name) @_sigil_name
+            (quoted_content) @injection.content
+            (#any-of? @_sigil_name "S" "s"))
+        ]))
+  ]))
+  (#any-of? @_identifier
+    "deprecated"
+    "moduledoc"
+    "typedoc"
+    "shortdoc"
+    "doc")
+  (#set! injection.language "markdown"))
 
-; Jason Sigils
+; Regex sigils
 ((sigil
   (sigil_name) @_sigil_name
   (quoted_content) @injection.content)
- (#match? @_sigil_name "^(J|j)$")
- (#set! injection.language "json")
- (#set! injection.combined))
+  (#any-of? @_sigil_name "R" "r")
+  (#set! injection.language "regex")
+  (#set! injection.combined))
 
-; Phoenix Live View Component Macros
+; Phoenix HEEx template sigil
+((sigil
+  (sigil_name) @_sigil_name
+  (quoted_content) @injection.content)
+  (#eq? @_sigil_name "H")
+  (#set! injection.language "heex"))
+
+; Jason sigils
+((sigil
+  (sigil_name) @_sigil_name
+  (quoted_content) @injection.content)
+  (#any-of? @_sigil_name "J" "j")
+  (#set! injection.language "json")
+  (#set! injection.combined))
+
+; Phoenix LiveView component macros
 (call
-  (identifier) @_identifier
+  target: (identifier) @_identifier
   (arguments
-    (atom)+
-    (keywords (pair
-      ((keyword) @_keyword (#eq? @_keyword "doc: "))
-      [
-        (string (quoted_content) @injection.content)
-        (sigil (quoted_content) @injection.content)
-      ]))
-  (#match? @_identifier "^(attr|slot)$")
-  (#set! injection.language "markdown")))
+    (atom)
+    (atom)?
+    (keywords
+      (pair
+        key: ((keyword) @_keyword (#eq? @_keyword "doc: "))
+        value: [
+          (string (quoted_content) @injection.content)
+          (sigil
+            (sigil_name) @_sigil_name
+            (quoted_content) @injection.content
+            (#any-of? @_sigil_name "S" "s"))
+        ])))
+  (#any-of? @_identifier "attr" "slot")
+  (#set! injection.language "markdown"))
 
-; Support comment parsing languages
+; Comment parsing languages support
 ((comment) @injection.content
   (#set! injection.language "comment"))
