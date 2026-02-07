@@ -1,6 +1,6 @@
-name = "HEEX"
+name = "HEEx"
 grammar = "heex"
-path_suffixes = ["heex"]
+path_suffixes = ["heex", "html.eex", "leex", "neex"]
 autoclose_before = ">})"
 brackets = [
     { start = "{", end = "}", close = true, newline = true },
@@ -9,6 +9,7 @@ brackets = [
     { start = "<", end = ">", close = true, newline = true },
 ]
 block_comment = ["<%!-- ", " --%>"]
+tab_size = 2
 scope_opt_in_language_servers = ["tailwindcss-language-server"]
 
 [overrides.string]
