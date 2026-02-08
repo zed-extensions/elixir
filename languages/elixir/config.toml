@@ -16,6 +16,7 @@ brackets = [
     { start = "'", end = "'", close = true, newline = false, not_in = ["string", "comment"] },
 ]
 tab_size = 2
+decrease_indent_pattern = '^\s*(after|catch|else|rescue)$'
 scope_opt_in_language_servers = ["tailwindcss-language-server"]
 
 [overrides.string]
