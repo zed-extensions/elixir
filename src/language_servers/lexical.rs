@@ -1,9 +1,10 @@
 use std::fs;
 
-use zed::lsp::{Completion, CompletionKind, Symbol};
-use zed::{CodeLabel, CodeLabelSpan, LanguageServerId};
-use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{self as zed, Result};
+use zed_extension_api::{
+    self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
+    lsp::{Completion, CompletionKind, Symbol},
+    settings::LspSettings,
+};
 
 use crate::language_servers::util;
 
@@ -28,7 +29,7 @@ impl Lexical {
     pub fn language_server_binary(
         &mut self,
         language_server_id: &LanguageServerId,
-        worktree: &zed::Worktree,
+        worktree: &Worktree,
     ) -> Result<LexicalBinary> {
         let binary_settings = LspSettings::for_worktree("lexical", worktree)
             .ok()
@@ -37,27 +38,28 @@ impl Lexical {
             .as_ref()
             .and_then(|binary_settings| binary_settings.arguments.clone());
 
-        if let Some(path) = binary_settings.and_then(|binary_settings| binary_settings.path) {
+        if let Some(binary_path) = binary_settings.and_then(|binary_settings| binary_settings.path)
+        {
             return Ok(LexicalBinary {
-                path,
+                path: binary_path,
                 args: binary_args,
             });
         }
 
-        if let Some(path) = worktree.which("lexical") {
+        if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
             return Ok(LexicalBinary {
-                path,
+                path: binary_path,
                 args: binary_args,
             });
         }
 
-        if let Some(path) = &self.cached_binary_path {
-            if fs::metadata(path).map_or(false, |stat| stat.is_file()) {
-                return Ok(LexicalBinary {
-                    path: path.clone(),
-                    args: binary_args,
-                });
-            }
+        if let Some(binary_path) = &self.cached_binary_path
+            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
+        {
+            return Ok(LexicalBinary {
+                path: binary_path.clone(),
+                args: binary_args,
+            });
         }
 
         zed::set_language_server_installation_status(
@@ -87,7 +89,7 @@ impl Lexical {
         let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
         let binary_path = format!("{version_dir}/lexical/bin/start_lexical.sh");
 
-        if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
+        if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             zed::set_language_server_installation_status(
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,

@@ -1,9 +1,11 @@
 use std::fs;
 
-use zed::lsp::{Completion, CompletionKind, Symbol, SymbolKind};
-use zed::settings::LspSettings;
-use zed::{serde_json, CodeLabel, CodeLabelSpan, LanguageServerId};
-use zed_extension_api::{self as zed, Result};
+use zed_extension_api::{
+    self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
+    lsp::{Completion, CompletionKind, Symbol, SymbolKind},
+    serde_json::{self, Value},
+    settings::LspSettings,
+};
 
 use crate::language_servers::util;
 
@@ -23,16 +25,16 @@ impl ElixirLs {
     pub fn language_server_binary_path(
         &mut self,
         language_server_id: &LanguageServerId,
-        worktree: &zed::Worktree,
+        worktree: &Worktree,
     ) -> Result<String> {
-        if let Some(path) = worktree.which("elixir-ls") {
-            return Ok(path);
+        if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
+            return Ok(binary_path);
         }
 
-        if let Some(path) = &self.cached_binary_path {
-            if fs::metadata(path).map_or(false, |stat| stat.is_file()) {
-                return Ok(path.clone());
-            }
+        if let Some(binary_path) = &self.cached_binary_path
+            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
+        {
+            return Ok(binary_path.clone());
         }
 
         zed::set_language_server_installation_status(
@@ -67,7 +69,7 @@ impl ElixirLs {
         };
         let binary_path = format!("{version_dir}/language_server.{extension}");
 
-        if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
+        if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             zed::set_language_server_installation_status(
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,
@@ -93,8 +95,8 @@ impl ElixirLs {
 
     pub fn language_server_workspace_configuration(
         &mut self,
-        worktree: &zed::Worktree,
-    ) -> Result<Option<serde_json::Value>> {
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
         let settings = LspSettings::for_worktree("elixir-ls", worktree)
             .ok()
             .and_then(|lsp_settings| lsp_settings.settings.clone())

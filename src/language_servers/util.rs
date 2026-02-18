@@ -17,3 +17,21 @@ pub(super) fn remove_outdated_versions(
     }
     Ok(())
 }
+
+pub(super) fn find_existing_binary(
+    language_server_id: &'static str,
+    binary_name: &str,
+) -> Option<String> {
+    fs::read_dir(".").ok()?.flatten().find_map(|entry| {
+        let binary_path = entry.path().join(binary_name);
+
+        if binary_path.is_file()
+            && let Some(binary_dir) = entry.file_name().to_str()
+            && binary_dir.starts_with(language_server_id)
+        {
+            Some(binary_path.to_string_lossy().to_string())
+        } else {
+            None
+        }
+    })
+}
