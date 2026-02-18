@@ -27,6 +27,15 @@ impl ElixirLs {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<String> {
+        let (platform, _arch) = zed::current_platform();
+        let extension = match platform {
+            zed::Os::Mac | zed::Os::Linux => "sh",
+            zed::Os::Windows => "bat",
+        };
+        let binary_name = format!("language_server.{extension}");
+        let launch_script = format!("launch.{extension}");
+        let debug_adapter = format!("debug_adapter.{extension}");
+
         if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
             return Ok(binary_path);
         }
@@ -41,13 +50,24 @@ impl ElixirLs {
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
-        let release = zed::latest_github_release(
+        let release = match zed::latest_github_release(
             "elixir-lsp/elixir-ls",
             zed::GithubReleaseOptions {
                 require_assets: true,
                 pre_release: false,
             },
-        )?;
+        ) {
+            Ok(release) => release,
+            Err(_) => {
+                if let Some(binary_path) =
+                    util::find_existing_binary(Self::LANGUAGE_SERVER_ID, &binary_name)
+                {
+                    self.cached_binary_path = Some(binary_path.clone());
+                    return Ok(binary_path);
+                }
+                return Err("failed to download latest github release".to_string());
+            }
+        };
 
         let asset_name = format!(
             "{}-{version}.zip",
@@ -61,13 +81,10 @@ impl ElixirLs {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
-        let (platform, _arch) = zed::current_platform();
-        let version_dir = format!("elixir-ls-{}", release.version);
-        let extension = match platform {
-            zed::Os::Mac | zed::Os::Linux => "sh",
-            zed::Os::Windows => "bat",
-        };
-        let binary_path = format!("{version_dir}/language_server.{extension}");
+        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
+        let binary_path = format!("{}/{}", version_dir, binary_name);
+        let launch_path = format!("{}/{}", version_dir, launch_script);
+        let debug_path = format!("{}/{}", version_dir, debug_adapter);
 
         if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             zed::set_language_server_installation_status(
@@ -83,8 +100,8 @@ impl ElixirLs {
             .map_err(|e| format!("failed to download file: {e}"))?;
 
             zed::make_file_executable(&binary_path)?;
-            zed::make_file_executable(&format!("{version_dir}/launch.{extension}"))?;
-            zed::make_file_executable(&format!("{version_dir}/debug_adapter.{extension}"))?;
+            zed::make_file_executable(&launch_path)?;
+            zed::make_file_executable(&debug_path)?;
 
             util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
@@ -97,7 +114,7 @@ impl ElixirLs {
         &mut self,
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
-        let settings = LspSettings::for_worktree("elixir-ls", worktree)
+        let settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
             .ok()
             .and_then(|lsp_settings| lsp_settings.settings.clone())
             .unwrap_or_default();

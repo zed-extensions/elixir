@@ -39,17 +39,29 @@ impl NextLs {
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
-        let release = zed::latest_github_release(
+        let release = match zed::latest_github_release(
             "elixir-tools/next-ls",
             zed::GithubReleaseOptions {
                 require_assets: true,
                 pre_release: false,
             },
-        )?;
+        ) {
+            Ok(release) => release,
+            Err(_) => {
+                if let Some(binary_path) =
+                    util::find_existing_binary(Self::LANGUAGE_SERVER_ID, Self::LANGUAGE_SERVER_ID)
+                {
+                    self.cached_binary_path = Some(binary_path.clone());
+                    return Ok(binary_path);
+                }
+                return Err("failed to download latest github release".to_string());
+            }
+        };
 
         let (platform, arch) = zed::current_platform();
         let asset_name = format!(
-            "next_ls_{os}_{arch}{extension}",
+            "{}_{os}_{arch}{extension}",
+            Self::LANGUAGE_SERVER_ID.replace("-", "_"),
             os = match platform {
                 zed::Os::Mac => "darwin",
                 zed::Os::Linux => "linux",
@@ -73,10 +85,10 @@ impl NextLs {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
-        let version_dir = format!("next-ls-{}", release.version);
+        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
         fs::create_dir_all(&version_dir).map_err(|e| format!("failed to create directory: {e}"))?;
 
-        let binary_path = format!("{version_dir}/next-ls");
+        let binary_path = format!("{}/{}", version_dir, Self::LANGUAGE_SERVER_ID);
 
         if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             zed::set_language_server_installation_status(
