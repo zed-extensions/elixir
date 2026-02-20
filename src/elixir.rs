@@ -3,7 +3,7 @@ mod language_servers;
 use zed_extension_api::{
     self as zed, CodeLabel, LanguageServerId, Result, Worktree,
     lsp::{Completion, Symbol},
-    serde_json::{self, Value},
+    serde_json::Value,
 };
 
 use crate::language_servers::{ElixirLs, Expert, Lexical, NextLs};
@@ -31,46 +31,75 @@ impl zed::Extension for ElixirExtension {
         worktree: &Worktree,
     ) -> Result<zed::Command> {
         match language_server_id.as_ref() {
-            Expert::LANGUAGE_SERVER_ID => {
-                let expert = self.expert.get_or_insert_with(Expert::new);
-                let expert_binary = expert.language_server_binary(language_server_id, worktree)?;
-
-                Ok(zed::Command {
-                    command: expert_binary.path,
-                    args: expert_binary.args,
-                    env: Default::default(),
-                })
-            }
-            ElixirLs::LANGUAGE_SERVER_ID => {
-                let elixir_ls = self.elixir_ls.get_or_insert_with(ElixirLs::new);
-
-                Ok(zed::Command {
-                    command: elixir_ls.language_server_binary_path(language_server_id, worktree)?,
-                    args: vec![],
-                    env: Default::default(),
-                })
-            }
-            NextLs::LANGUAGE_SERVER_ID => {
-                let next_ls = self.next_ls.get_or_insert_with(NextLs::new);
-
-                Ok(zed::Command {
-                    command: next_ls.language_server_binary_path(language_server_id, worktree)?,
-                    args: vec!["--stdio".to_string()],
-                    env: Default::default(),
-                })
-            }
-            Lexical::LANGUAGE_SERVER_ID => {
-                let lexical = self.lexical.get_or_insert_with(Lexical::new);
-                let lexical_binary =
-                    lexical.language_server_binary(language_server_id, worktree)?;
-
-                Ok(zed::Command {
-                    command: lexical_binary.path,
-                    args: lexical_binary.args.unwrap_or_default(),
-                    env: Default::default(),
-                })
-            }
+            Expert::LANGUAGE_SERVER_ID => self
+                .expert
+                .get_or_insert_with(Expert::new)
+                .language_server_command(language_server_id, worktree),
+            ElixirLs::LANGUAGE_SERVER_ID => self
+                .elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .language_server_command(language_server_id, worktree),
+            NextLs::LANGUAGE_SERVER_ID => self
+                .next_ls
+                .get_or_insert_with(NextLs::new)
+                .language_server_command(language_server_id, worktree),
+            Lexical::LANGUAGE_SERVER_ID => self
+                .lexical
+                .get_or_insert_with(Lexical::new)
+                .language_server_command(language_server_id, worktree),
             language_server_id => Err(format!("unknown language server: {language_server_id}")),
+        }
+    }
+
+    fn language_server_initialization_options(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        match language_server_id.as_ref() {
+            Expert::LANGUAGE_SERVER_ID => self
+                .expert
+                .get_or_insert_with(Expert::new)
+                .language_server_initialization_options(worktree),
+            ElixirLs::LANGUAGE_SERVER_ID => self
+                .elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .language_server_initialization_options(worktree),
+            NextLs::LANGUAGE_SERVER_ID => self
+                .next_ls
+                .get_or_insert_with(NextLs::new)
+                .language_server_initialization_options(worktree),
+            Lexical::LANGUAGE_SERVER_ID => self
+                .lexical
+                .get_or_insert_with(Lexical::new)
+                .language_server_initialization_options(worktree),
+            _ => Ok(None),
+        }
+    }
+
+    fn language_server_workspace_configuration(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        match language_server_id.as_ref() {
+            Expert::LANGUAGE_SERVER_ID => self
+                .expert
+                .get_or_insert_with(Expert::new)
+                .language_server_workspace_configuration(worktree),
+            ElixirLs::LANGUAGE_SERVER_ID => self
+                .elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .language_server_workspace_configuration(worktree),
+            NextLs::LANGUAGE_SERVER_ID => self
+                .next_ls
+                .get_or_insert_with(NextLs::new)
+                .language_server_workspace_configuration(worktree),
+            Lexical::LANGUAGE_SERVER_ID => self
+                .lexical
+                .get_or_insert_with(Lexical::new)
+                .language_server_workspace_configuration(worktree),
+            _ => Ok(None),
         }
     }
 
@@ -102,37 +131,6 @@ impl zed::Extension for ElixirExtension {
             Lexical::LANGUAGE_SERVER_ID => self.lexical.as_ref()?.label_for_symbol(symbol),
             _ => None,
         }
-    }
-
-    fn language_server_initialization_options(
-        &mut self,
-        language_server_id: &LanguageServerId,
-        _worktree: &Worktree,
-    ) -> Result<Option<Value>> {
-        match language_server_id.as_ref() {
-            NextLs::LANGUAGE_SERVER_ID => Ok(Some(serde_json::json!({
-                "experimental": {
-                    "completions": {
-                        "enable": true
-                    }
-                }
-            }))),
-            _ => Ok(None),
-        }
-    }
-
-    fn language_server_workspace_configuration(
-        &mut self,
-        language_server_id: &LanguageServerId,
-        worktree: &Worktree,
-    ) -> Result<Option<Value>> {
-        if language_server_id.as_ref() == ElixirLs::LANGUAGE_SERVER_ID
-            && let Some(elixir_ls) = self.elixir_ls.as_mut()
-        {
-            return elixir_ls.language_server_workspace_configuration(worktree);
-        }
-
-        Ok(None)
     }
 }
 

@@ -3,9 +3,16 @@ use std::fs;
 use zed_extension_api::{
     self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
     lsp::{Completion, CompletionKind, Symbol, SymbolKind},
+    serde_json::{Value, json},
+    settings::LspSettings,
 };
 
-use crate::language_servers::util;
+use crate::language_servers::{config, util};
+
+struct NextLsBinary {
+    path: String,
+    args: Vec<String>,
+}
 
 pub struct NextLs {
     cached_binary_path: Option<String>,
@@ -20,25 +27,59 @@ impl NextLs {
         }
     }
 
-    pub fn language_server_binary_path(
+    pub fn language_server_command(
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
-    ) -> Result<String> {
+    ) -> Result<zed::Command> {
+        let next_ls = self.language_server_binary(language_server_id, worktree)?;
+
+        Ok(zed::Command {
+            command: next_ls.path,
+            args: next_ls.args,
+            env: Default::default(),
+        })
+    }
+
+    fn language_server_binary(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<NextLsBinary> {
+        let (platform, arch) = zed::current_platform();
+
+        let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
+        let binary_args = config::get_binary_args(&binary_settings)
+            .unwrap_or_else(|| vec!["--stdio".to_string()]);
+
+        if let Some(binary_path) = config::get_binary_path(&binary_settings) {
+            return Ok(NextLsBinary {
+                path: binary_path,
+                args: binary_args,
+            });
+        }
+
         if let Some(binary_path) = worktree.which(&Self::LANGUAGE_SERVER_ID.replace("-", "")) {
-            return Ok(binary_path);
+            return Ok(NextLsBinary {
+                path: binary_path,
+                args: binary_args,
+            });
         }
 
         if let Some(binary_path) = &self.cached_binary_path
             && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
         {
-            return Ok(binary_path.clone());
+            return Ok(NextLsBinary {
+                path: binary_path.clone(),
+                args: binary_args,
+            });
         }
 
         zed::set_language_server_installation_status(
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
+
         let release = match zed::latest_github_release(
             "elixir-tools/next-ls",
             zed::GithubReleaseOptions {
@@ -52,13 +93,15 @@ impl NextLs {
                     util::find_existing_binary(Self::LANGUAGE_SERVER_ID, Self::LANGUAGE_SERVER_ID)
                 {
                     self.cached_binary_path = Some(binary_path.clone());
-                    return Ok(binary_path);
+                    return Ok(NextLsBinary {
+                        path: binary_path,
+                        args: binary_args,
+                    });
                 }
                 return Err("failed to download latest github release".to_string());
             }
         };
 
-        let (platform, arch) = zed::current_platform();
         let asset_name = format!(
             "{}_{os}_{arch}{extension}",
             Self::LANGUAGE_SERVER_ID.replace("-", "_"),
@@ -76,7 +119,7 @@ impl NextLs {
             extension = match platform {
                 zed::Os::Mac | zed::Os::Linux => "",
                 zed::Os::Windows => ".exe",
-            }
+            },
         );
 
         let asset = release
@@ -109,7 +152,37 @@ impl NextLs {
         }
 
         self.cached_binary_path = Some(binary_path.clone());
-        Ok(binary_path)
+        Ok(NextLsBinary {
+            path: binary_path,
+            args: binary_args,
+        })
+    }
+
+    pub fn language_server_initialization_options(
+        &mut self,
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        let settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
+            .ok()
+            .and_then(|lsp_settings| lsp_settings.initialization_options.clone())
+            .unwrap_or_else(|| {
+                json!({
+                    "experimental": {
+                        "completions": {
+                            "enable": true
+                        }
+                    }
+                })
+            });
+
+        Ok(Some(settings))
+    }
+
+    pub fn language_server_workspace_configuration(
+        &mut self,
+        _worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(None)
     }
 
     pub fn label_for_completion(&self, completion: Completion) -> Option<CodeLabel> {

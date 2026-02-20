@@ -1,3 +1,4 @@
+mod config;
 mod elixir_ls;
 mod expert;
 mod lexical;
