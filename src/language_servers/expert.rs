@@ -109,7 +109,6 @@ impl Expert {
                 zed::Os::Windows => ".exe",
             }
         );
-        let checksum_asset_name = format!("{}_checksums.txt", Self::LANGUAGE_SERVER_ID);
 
         let asset = release
             .assets
@@ -117,41 +116,7 @@ impl Expert {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
-        let checksum_asset = release
-            .assets
-            .iter()
-            .find(|asset| asset.name == "expert_checksums.txt")
-            .ok_or_else(|| format!("no checksums file found matching {:?}", checksum_asset_name))?;
-
-        let checksums_dir = format!("{}-checksums", Self::LANGUAGE_SERVER_ID);
-        fs::create_dir_all(&checksums_dir)
-            .map_err(|e| format!("failed to create directory: {e}"))?;
-
-        let checksums_path = format!("{checksums_dir}/expert_checksums.txt");
-
-        zed::download_file(
-            &checksum_asset.download_url,
-            &checksums_path,
-            zed::DownloadedFileType::Uncompressed,
-        )
-        .map_err(|e| format!("failed to download checksums file: {e}"))?;
-
-        let checksums_content = fs::read_to_string(&checksums_path)
-            .map_err(|e| format!("failed to read checksums file: {e}"))?;
-
-        fs::remove_dir_all(&checksums_dir)
-            .map_err(|e| format!("failed to remove checksums directory: {e}"))?;
-
-        let truncated_checksum = checksums_content
-            .lines()
-            .find(|line| line.ends_with(&asset_name))
-            .and_then(|line| line.split_whitespace().next())
-            .ok_or_else(|| format!("checksum not found for {}", asset_name))?
-            .chars()
-            .take(8)
-            .collect::<String>();
-
-        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, truncated_checksum);
+        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
         fs::create_dir_all(&version_dir).map_err(|e| format!("failed to create directory: {e}"))?;
 
         let binary_path = format!("{}/{}", version_dir, Self::LANGUAGE_SERVER_ID);
