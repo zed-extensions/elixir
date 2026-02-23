@@ -4,7 +4,6 @@ use zed_extension_api::{
     self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
     lsp::{Completion, CompletionKind, Symbol, SymbolKind},
     serde_json::{Value, json},
-    settings::LspSettings,
 };
 
 use crate::language_servers::{config, util};
@@ -163,9 +162,7 @@ impl ElixirLs {
         &mut self,
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
-        let settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
-            .ok()
-            .and_then(|lsp_settings| lsp_settings.settings.clone())
+        let settings = config::get_workspace_configuration(Self::LANGUAGE_SERVER_ID, worktree)
             .unwrap_or_default();
 
         Ok(Some(json!({

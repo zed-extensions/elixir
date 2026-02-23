@@ -1,7 +1,26 @@
 use zed_extension_api::{
     Worktree,
+    serde_json::Value,
     settings::{CommandSettings, LspSettings},
 };
+
+pub(super) fn get_initialization_options(
+    language_server_id: &'static str,
+    worktree: &Worktree,
+) -> Option<Value> {
+    LspSettings::for_worktree(language_server_id, worktree)
+        .ok()
+        .and_then(|lsp_settings| lsp_settings.initialization_options.clone())
+}
+
+pub(super) fn get_workspace_configuration(
+    language_server_id: &'static str,
+    worktree: &Worktree,
+) -> Option<Value> {
+    LspSettings::for_worktree(language_server_id, worktree)
+        .ok()
+        .and_then(|lsp_settings| lsp_settings.settings.clone())
+}
 
 pub(super) fn get_binary_settings(
     language_server_id: &'static str,

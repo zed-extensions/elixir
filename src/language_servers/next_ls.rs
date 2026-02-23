@@ -4,7 +4,6 @@ use zed_extension_api::{
     self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
     lsp::{Completion, CompletionKind, Symbol, SymbolKind},
     serde_json::{Value, json},
-    settings::LspSettings,
 };
 
 use crate::language_servers::{config, util};
@@ -162,9 +161,7 @@ impl NextLs {
         &mut self,
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
-        let settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
-            .ok()
-            .and_then(|lsp_settings| lsp_settings.initialization_options.clone())
+        let settings = config::get_initialization_options(Self::LANGUAGE_SERVER_ID, worktree)
             .unwrap_or_else(|| {
                 json!({
                     "experimental": {
@@ -180,9 +177,12 @@ impl NextLs {
 
     pub fn language_server_workspace_configuration(
         &mut self,
-        _worktree: &Worktree,
+        worktree: &Worktree,
     ) -> Result<Option<Value>> {
-        Ok(None)
+        let settings = config::get_workspace_configuration(Self::LANGUAGE_SERVER_ID, worktree)
+            .unwrap_or_default();
+
+        Ok(Some(settings))
     }
 
     pub fn label_for_completion(&self, completion: Completion) -> Option<CodeLabel> {
