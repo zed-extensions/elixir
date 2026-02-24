@@ -53,7 +53,7 @@ impl Expert {
         }
 
         if let Some(path) = &self.cached_binary_path {
-            if fs::metadata(path).map_or(false, |stat| stat.is_file()) {
+            if fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
                 return Ok(ExpertBinary {
                     path: path.clone(),
                     args: binary_args,
@@ -115,7 +115,7 @@ impl Expert {
             .assets
             .iter()
             .find(|asset| asset.name == "expert_checksums.txt")
-            .ok_or_else(|| format!("no checksums file found in release"))?;
+            .ok_or_else(|| "no checksums file found in release".to_string())?;
 
         let checksums_dir = format!("{}-checksums", Self::LANGUAGE_SERVER_ID);
         fs::create_dir_all(&checksums_dir)
@@ -150,7 +150,7 @@ impl Expert {
 
         let binary_path = format!("{}/{}", expert_dir, Self::LANGUAGE_SERVER_ID);
 
-        if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
+        if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             zed::set_language_server_installation_status(
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,
