@@ -64,13 +64,25 @@ impl Lexical {
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
-        let release = zed::latest_github_release(
+        let release = match zed::latest_github_release(
             "lexical-lsp/lexical",
             zed::GithubReleaseOptions {
                 require_assets: true,
                 pre_release: false,
             },
-        )?;
+        ) {
+            Ok(release) => release,
+            Err(_) => {
+                if let Some(path) = util::find_existing_binary("lexical/bin/start_lexical.sh") {
+                    self.cached_binary_path = Some(path.clone());
+                    return Ok(LexicalBinary {
+                        path,
+                        args: binary_args,
+                    });
+                }
+                return Err("failed to download latest github release".to_string());
+            }
+        };
 
         let asset_name = format!(
             "{}-{version}.zip",

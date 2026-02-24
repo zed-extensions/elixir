@@ -19,23 +19,6 @@ pub struct Expert {
 impl Expert {
     pub const LANGUAGE_SERVER_ID: &'static str = "expert";
 
-    fn find_existing_binary() -> Option<String> {
-        fs::read_dir(".")
-            .ok()?
-            .flatten()
-            .filter_map(|entry| {
-                let path = entry.path();
-                if path.is_dir() {
-                    let binary_path = path.join("expert");
-                    if binary_path.is_file() {
-                        return Some(binary_path.to_string_lossy().to_string());
-                    }
-                }
-                None
-            })
-            .next()
-    }
-
     pub fn new() -> Self {
         Self {
             cached_binary_path: None,
@@ -91,7 +74,7 @@ impl Expert {
         ) {
             Ok(release) => release,
             Err(_) => {
-                if let Some(path) = Self::find_existing_binary() {
+                if let Some(path) = util::find_existing_binary(Self::LANGUAGE_SERVER_ID) {
                     self.cached_binary_path = Some(path.clone());
                     return Ok(ExpertBinary {
                         path,

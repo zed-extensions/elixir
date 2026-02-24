@@ -39,13 +39,29 @@ impl ElixirLs {
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
-        let release = zed::latest_github_release(
+        let release = match zed::latest_github_release(
             "elixir-lsp/elixir-ls",
             zed::GithubReleaseOptions {
                 require_assets: true,
                 pre_release: false,
             },
-        )?;
+        ) {
+            Ok(release) => release,
+            Err(_) => {
+                let (platform, _arch) = zed::current_platform();
+                let extension = match platform {
+                    zed::Os::Mac | zed::Os::Linux => "sh",
+                    zed::Os::Windows => "bat",
+                };
+                if let Some(path) =
+                    util::find_existing_binary(&format!("language_server.{extension}"))
+                {
+                    self.cached_binary_path = Some(path.clone());
+                    return Ok(path);
+                }
+                return Err("failed to download latest github release".to_string());
+            }
+        };
 
         let asset_name = format!(
             "{}-{version}.zip",
