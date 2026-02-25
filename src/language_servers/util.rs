@@ -25,11 +25,13 @@ pub(super) fn find_existing_binary(
     fs::read_dir(".").ok()?.flatten().find_map(|entry| {
         let binary_path = entry.path().join(binary_name);
 
-        (binary_path.is_file()
-            && entry
-                .file_name()
-                .to_str()
-                .is_some_and(|binary_dir| binary_dir.starts_with(language_server_id)))
-        .then(|| binary_path.to_string_lossy().to_string())
+        if binary_path.is_file()
+            && let Some(binary_dir) = entry.file_name().to_str()
+            && binary_dir.starts_with(language_server_id)
+        {
+            Some(binary_path.to_string_lossy().to_string())
+        } else {
+            None
+        }
     })
 }
