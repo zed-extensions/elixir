@@ -1,8 +1,10 @@
 mod language_servers;
 
-use zed::lsp::{Completion, Symbol};
-use zed::{serde_json, CodeLabel, LanguageServerId};
-use zed_extension_api::{self as zed, Result};
+use zed_extension_api::{
+    self as zed, CodeLabel, LanguageServerId, Result, Worktree,
+    lsp::{Completion, Symbol},
+    serde_json::{self, Value},
+};
 
 use crate::language_servers::{ElixirLs, Expert, Lexical, NextLs};
 
@@ -26,7 +28,7 @@ impl zed::Extension for ElixirExtension {
     fn language_server_command(
         &mut self,
         language_server_id: &LanguageServerId,
-        worktree: &zed::Worktree,
+        worktree: &Worktree,
     ) -> Result<zed::Command> {
         match language_server_id.as_ref() {
             Expert::LANGUAGE_SERVER_ID => {
@@ -105,8 +107,8 @@ impl zed::Extension for ElixirExtension {
     fn language_server_initialization_options(
         &mut self,
         language_server_id: &LanguageServerId,
-        _worktree: &zed::Worktree,
-    ) -> Result<Option<serde_json::Value>> {
+        _worktree: &Worktree,
+    ) -> Result<Option<Value>> {
         match language_server_id.as_ref() {
             NextLs::LANGUAGE_SERVER_ID => Ok(Some(serde_json::json!({
                 "experimental": {
@@ -122,12 +124,12 @@ impl zed::Extension for ElixirExtension {
     fn language_server_workspace_configuration(
         &mut self,
         language_server_id: &LanguageServerId,
-        worktree: &zed::Worktree,
-    ) -> Result<Option<serde_json::Value>> {
-        if language_server_id.as_ref() == ElixirLs::LANGUAGE_SERVER_ID {
-            if let Some(elixir_ls) = self.elixir_ls.as_mut() {
-                return elixir_ls.language_server_workspace_configuration(worktree);
-            }
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        if language_server_id.as_ref() == ElixirLs::LANGUAGE_SERVER_ID
+            && let Some(elixir_ls) = self.elixir_ls.as_mut()
+        {
+            return elixir_ls.language_server_workspace_configuration(worktree);
         }
 
         Ok(None)

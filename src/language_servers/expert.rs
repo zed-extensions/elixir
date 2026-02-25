@@ -1,9 +1,10 @@
 use std::fs;
 
-use zed::LanguageServerId;
-use zed_extension_api::lsp::{Completion, CompletionKind, Symbol, SymbolKind};
-use zed_extension_api::settings::LspSettings;
-use zed_extension_api::{self as zed, CodeLabel, CodeLabelSpan, Result};
+use zed_extension_api::{
+    self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
+    lsp::{Completion, CompletionKind, Symbol, SymbolKind},
+    settings::LspSettings,
+};
 
 use crate::language_servers::util;
 
@@ -28,9 +29,9 @@ impl Expert {
     pub fn language_server_binary(
         &mut self,
         language_server_id: &LanguageServerId,
-        worktree: &zed::Worktree,
+        worktree: &Worktree,
     ) -> Result<ExpertBinary> {
-        let binary_settings = LspSettings::for_worktree("expert", worktree)
+        let binary_settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
             .ok()
             .and_then(|lsp_settings| lsp_settings.binary);
         let binary_args = binary_settings
@@ -38,44 +39,60 @@ impl Expert {
             .and_then(|binary_settings| binary_settings.arguments.clone())
             .unwrap_or_else(|| vec!["--stdio".to_string()]);
 
-        if let Some(path) = binary_settings.and_then(|binary_settings| binary_settings.path) {
+        if let Some(binary_path) = binary_settings.and_then(|binary_settings| binary_settings.path)
+        {
             return Ok(ExpertBinary {
-                path,
+                path: binary_path,
                 args: binary_args,
             });
         }
 
-        if let Some(path) = worktree.which("expert") {
+        if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
             return Ok(ExpertBinary {
-                path,
+                path: binary_path,
                 args: binary_args,
             });
         }
 
-        if let Some(path) = &self.cached_binary_path {
-            if fs::metadata(path).map_or(false, |stat| stat.is_file()) {
-                return Ok(ExpertBinary {
-                    path: path.clone(),
-                    args: binary_args,
-                });
-            }
+        if let Some(binary_path) = &self.cached_binary_path
+            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
+        {
+            return Ok(ExpertBinary {
+                path: binary_path.clone(),
+                args: binary_args,
+            });
         }
 
         zed::set_language_server_installation_status(
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
-        let release = zed::latest_github_release(
+        let release = match zed::latest_github_release(
             "elixir-lang/expert",
             zed::GithubReleaseOptions {
                 require_assets: true,
                 pre_release: true,
             },
-        )?;
+        ) {
+            Ok(release) => release,
+            Err(_) => {
+                if let Some(binary_path) =
+                    util::find_existing_binary(Self::LANGUAGE_SERVER_ID, Self::LANGUAGE_SERVER_ID)
+                {
+                    self.cached_binary_path = Some(binary_path.clone());
+                    return Ok(ExpertBinary {
+                        path: binary_path,
+                        args: binary_args,
+                    });
+                }
+                return Err("failed to download latest github release".to_string());
+            }
+        };
 
         let (platform, arch) = zed::current_platform();
         let asset_name = format!(
-            "expert_{os}_{arch}{extension}",
+            "{}_{os}_{arch}{extension}",
+            Self::LANGUAGE_SERVER_ID,
             os = match platform {
                 zed::Os::Mac => "darwin",
                 zed::Os::Linux => "linux",
@@ -99,17 +116,19 @@ impl Expert {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
+        const CHECKSUM_ASSET_NAME: &str = "expert_checksums.txt";
+
         let checksum_asset = release
             .assets
             .iter()
-            .find(|asset| asset.name == "expert_checksums.txt")
-            .ok_or_else(|| format!("no checksums file found in release"))?;
+            .find(|asset| asset.name == CHECKSUM_ASSET_NAME)
+            .ok_or_else(|| format!("no checksums file found matching {:?}", CHECKSUM_ASSET_NAME))?;
 
         let checksums_dir = format!("{}-checksums", Self::LANGUAGE_SERVER_ID);
         fs::create_dir_all(&checksums_dir)
             .map_err(|e| format!("failed to create directory: {e}"))?;
 
-        let checksums_path = format!("{checksums_dir}/expert_checksums.txt");
+        let checksums_path = format!("{}/{}", checksums_dir, CHECKSUM_ASSET_NAME);
 
         zed::download_file(
             &checksum_asset.download_url,
@@ -133,12 +152,17 @@ impl Expert {
             .take(8)
             .collect::<String>();
 
-        let expert_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, truncated_checksum);
-        fs::create_dir_all(&expert_dir).map_err(|e| format!("failed to create directory: {e}"))?;
+        let version_dir = format!(
+            "{}-{}-{}",
+            Self::LANGUAGE_SERVER_ID,
+            release.version,
+            truncated_checksum,
+        );
+        fs::create_dir_all(&version_dir).map_err(|e| format!("failed to create directory: {e}"))?;
 
-        let binary_path = format!("{expert_dir}/expert");
+        let binary_path = format!("{}/{}", version_dir, Self::LANGUAGE_SERVER_ID);
 
-        if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
+        if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             zed::set_language_server_installation_status(
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,
@@ -153,7 +177,7 @@ impl Expert {
 
             zed::make_file_executable(&binary_path)?;
 
-            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &expert_dir)?;
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
 
         self.cached_binary_path = Some(binary_path.clone());
