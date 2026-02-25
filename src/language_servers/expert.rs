@@ -3,14 +3,14 @@ use std::fs;
 use zed_extension_api::{
     self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
     lsp::{Completion, CompletionKind, Symbol, SymbolKind},
-    settings::LspSettings,
+    serde_json::Value,
 };
 
-use crate::language_servers::util;
+use crate::language_servers::{config, util};
 
-pub struct ExpertBinary {
-    pub path: String,
-    pub args: Vec<String>,
+struct ExpertBinary {
+    path: String,
+    args: Vec<String>,
 }
 
 pub struct Expert {
@@ -26,21 +26,32 @@ impl Expert {
         }
     }
 
-    pub fn language_server_binary(
+    pub fn language_server_command(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<zed::Command> {
+        let expert = self.language_server_binary(language_server_id, worktree)?;
+
+        Ok(zed::Command {
+            command: expert.path,
+            args: expert.args,
+            env: Default::default(),
+        })
+    }
+
+    fn language_server_binary(
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<ExpertBinary> {
-        let binary_settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
-            .ok()
-            .and_then(|lsp_settings| lsp_settings.binary);
-        let binary_args = binary_settings
-            .as_ref()
-            .and_then(|binary_settings| binary_settings.arguments.clone())
+        let (platform, arch) = zed::current_platform();
+
+        let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
+        let binary_args = config::get_binary_args(&binary_settings)
             .unwrap_or_else(|| vec!["--stdio".to_string()]);
 
-        if let Some(binary_path) = binary_settings.and_then(|binary_settings| binary_settings.path)
-        {
+        if let Some(binary_path) = config::get_binary_path(&binary_settings) {
             return Ok(ExpertBinary {
                 path: binary_path,
                 args: binary_args,
@@ -67,6 +78,7 @@ impl Expert {
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
+
         let release = match zed::latest_github_release(
             "elixir-lang/expert",
             zed::GithubReleaseOptions {
@@ -89,7 +101,6 @@ impl Expert {
             }
         };
 
-        let (platform, arch) = zed::current_platform();
         let asset_name = format!(
             "{}_{os}_{arch}{extension}",
             Self::LANGUAGE_SERVER_ID,
@@ -107,7 +118,7 @@ impl Expert {
             extension = match platform {
                 zed::Os::Mac | zed::Os::Linux => "",
                 zed::Os::Windows => ".exe",
-            }
+            },
         );
 
         let asset = release
@@ -185,6 +196,20 @@ impl Expert {
             path: binary_path,
             args: binary_args,
         })
+    }
+
+    pub fn language_server_initialization_options(
+        &mut self,
+        _worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(None)
+    }
+
+    pub fn language_server_workspace_configuration(
+        &mut self,
+        _worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(None)
     }
 
     pub fn label_for_completion(&self, completion: Completion) -> Option<CodeLabel> {

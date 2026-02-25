@@ -3,11 +3,15 @@ use std::fs;
 use zed_extension_api::{
     self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
     lsp::{Completion, CompletionKind, Symbol, SymbolKind},
-    serde_json::{self, Value},
-    settings::LspSettings,
+    serde_json::{Value, json},
 };
 
-use crate::language_servers::util;
+use crate::language_servers::{config, util};
+
+struct ElixirLsBinary {
+    path: String,
+    args: Vec<String>,
+}
 
 pub struct ElixirLs {
     cached_binary_path: Option<String>,
@@ -22,34 +26,65 @@ impl ElixirLs {
         }
     }
 
-    pub fn language_server_binary_path(
+    pub fn language_server_command(
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
-    ) -> Result<String> {
+    ) -> Result<zed::Command> {
+        let elixir_ls = self.language_server_binary(language_server_id, worktree)?;
+
+        Ok(zed::Command {
+            command: elixir_ls.path,
+            args: elixir_ls.args,
+            env: Default::default(),
+        })
+    }
+
+    fn language_server_binary(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<ElixirLsBinary> {
         let (platform, _arch) = zed::current_platform();
         let extension = match platform {
             zed::Os::Mac | zed::Os::Linux => "sh",
             zed::Os::Windows => "bat",
         };
+
         let binary_name = format!("language_server.{extension}");
+        let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
+        let binary_args = config::get_binary_args(&binary_settings).unwrap_or_default();
         let launch_script = format!("launch.{extension}");
         let debug_adapter = format!("debug_adapter.{extension}");
 
+        if let Some(binary_path) = config::get_binary_path(&binary_settings) {
+            return Ok(ElixirLsBinary {
+                path: binary_path,
+                args: binary_args,
+            });
+        }
+
         if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
-            return Ok(binary_path);
+            return Ok(ElixirLsBinary {
+                path: binary_path,
+                args: binary_args,
+            });
         }
 
         if let Some(binary_path) = &self.cached_binary_path
             && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
         {
-            return Ok(binary_path.clone());
+            return Ok(ElixirLsBinary {
+                path: binary_path.clone(),
+                args: binary_args,
+            });
         }
 
         zed::set_language_server_installation_status(
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
+
         let release = match zed::latest_github_release(
             "elixir-lsp/elixir-ls",
             zed::GithubReleaseOptions {
@@ -63,7 +98,10 @@ impl ElixirLs {
                     util::find_existing_binary(Self::LANGUAGE_SERVER_ID, &binary_name)
                 {
                     self.cached_binary_path = Some(binary_path.clone());
-                    return Ok(binary_path);
+                    return Ok(ElixirLsBinary {
+                        path: binary_path,
+                        args: binary_args,
+                    });
                 }
                 return Err("failed to download latest github release".to_string());
             }
@@ -107,19 +145,27 @@ impl ElixirLs {
         }
 
         self.cached_binary_path = Some(binary_path.clone());
-        Ok(binary_path)
+        Ok(ElixirLsBinary {
+            path: binary_path,
+            args: binary_args,
+        })
+    }
+
+    pub fn language_server_initialization_options(
+        &mut self,
+        _worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(None)
     }
 
     pub fn language_server_workspace_configuration(
         &mut self,
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
-        let settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
-            .ok()
-            .and_then(|lsp_settings| lsp_settings.settings.clone())
+        let settings = config::get_workspace_configuration(Self::LANGUAGE_SERVER_ID, worktree)
             .unwrap_or_default();
 
-        Ok(Some(serde_json::json!({
+        Ok(Some(json!({
             "elixirLS": settings
         })))
     }

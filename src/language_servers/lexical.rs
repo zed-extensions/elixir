@@ -3,14 +3,14 @@ use std::fs;
 use zed_extension_api::{
     self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
     lsp::{Completion, CompletionKind, Symbol},
-    settings::LspSettings,
+    serde_json::Value,
 };
 
-use crate::language_servers::util;
+use crate::language_servers::{config, util};
 
-pub struct LexicalBinary {
-    pub path: String,
-    pub args: Option<Vec<String>>,
+struct LexicalBinary {
+    path: String,
+    args: Vec<String>,
 }
 
 pub struct Lexical {
@@ -26,23 +26,32 @@ impl Lexical {
         }
     }
 
-    pub fn language_server_binary(
+    pub fn language_server_command(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<zed::Command> {
+        let lexical = self.language_server_binary(language_server_id, worktree)?;
+
+        Ok(zed::Command {
+            command: lexical.path,
+            args: lexical.args,
+            env: Default::default(),
+        })
+    }
+
+    fn language_server_binary(
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<LexicalBinary> {
         let binary_name = format!("{}/bin/start_lexical.sh", Self::LANGUAGE_SERVER_ID);
-        let binary_settings = LspSettings::for_worktree(Self::LANGUAGE_SERVER_ID, worktree)
-            .ok()
-            .and_then(|lsp_settings| lsp_settings.binary);
-        let binary_args = binary_settings
-            .as_ref()
-            .and_then(|binary_settings| binary_settings.arguments.clone());
+        let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
+        let binary_args = config::get_binary_args(&binary_settings).unwrap_or_default();
         let port_wrapper = format!("{}/priv/port_wrapper.sh", Self::LANGUAGE_SERVER_ID);
         let debug_shell = format!("{}/bin/debug_shell.sh", Self::LANGUAGE_SERVER_ID);
 
-        if let Some(binary_path) = binary_settings.and_then(|binary_settings| binary_settings.path)
-        {
+        if let Some(binary_path) = config::get_binary_path(&binary_settings) {
             return Ok(LexicalBinary {
                 path: binary_path,
                 args: binary_args,
@@ -69,6 +78,7 @@ impl Lexical {
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
+
         let release = match zed::latest_github_release(
             "lexical-lsp/lexical",
             zed::GithubReleaseOptions {
@@ -94,7 +104,7 @@ impl Lexical {
         let asset_name = format!(
             "{}-{version}.zip",
             Self::LANGUAGE_SERVER_ID,
-            version = release.version
+            version = release.version,
         );
 
         let asset = release
@@ -133,6 +143,20 @@ impl Lexical {
             path: binary_path,
             args: binary_args,
         })
+    }
+
+    pub fn language_server_initialization_options(
+        &mut self,
+        _worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(None)
+    }
+
+    pub fn language_server_workspace_configuration(
+        &mut self,
+        _worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        Ok(None)
     }
 
     pub fn label_for_completion(&self, completion: Completion) -> Option<CodeLabel> {
