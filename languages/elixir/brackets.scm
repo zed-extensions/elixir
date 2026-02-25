@@ -18,14 +18,18 @@
   "do" @open
   "end" @close)
 
-(call
-  (arguments
-    "(" @open
-    ")" @close))
+(arguments
+  "(" @open
+  ")" @close)
 
 (anonymous_function
   "fn" @open
   "end" @close)
+
+(unary_operator
+  operator: "&"
+  "(" @open
+  ")" @close)
 
 (interpolation
   "#{" @open
