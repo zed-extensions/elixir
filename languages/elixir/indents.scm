@@ -6,7 +6,7 @@
   (bitstring ">>" @end)
   (do_block "end" @end)
   (anonymous_function "end" @end)
-  (call (arguments ")" @end))
+  (arguments ")" @end)
 ] @indent
 
 ; These have no end delimiter that can be captured,
