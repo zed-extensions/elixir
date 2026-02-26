@@ -45,6 +45,11 @@ impl Lexical {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<LexicalBinary> {
+        let (platform, _arch) = zed::current_platform();
+        if platform == zed::Os::Windows {
+            return Err(format!("unsupported platform: {platform:?}"));
+        }
+
         let binary_name = format!("{}/bin/start_lexical.sh", Self::LANGUAGE_SERVER_ID);
         let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
         let binary_args = config::get_binary_args(&binary_settings).unwrap_or_default();
