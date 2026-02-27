@@ -125,7 +125,7 @@
   quoted_end: _ @string.regex
   (#any-of? @_sigil_name "R" "r")) @string.regex
 
-; HEEx sigil
+; Phoenix HEEx template sigil
 (sigil
   (sigil_name) @string.special
   (quoted_content) @embedded
