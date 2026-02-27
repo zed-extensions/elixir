@@ -3,7 +3,10 @@ name = "Elixir"
 description = "Elixir support."
 version = "0.3.0"
 schema_version = 1
-authors = ["Marshall Bowers <elliott.codes@gmail.com>"]
+authors = [
+    "Marshall Bowers <elliott.codes@gmail.com>",
+    "Alonso Rocha Tapia <altcode@vivaldi.net>",
+]
 repository = "https://github.com/zed-extensions/elixir"
 
 [language_servers.expert]
