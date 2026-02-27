@@ -29,7 +29,6 @@
 ; HEEx inherits the DOCTYPE tag from HTML
 (doctype) @tag.doctype
 
-; HEEx comments are highlighted as such
 (comment) @comment
 
 ; HEEx tags and slots are highlighted as HTML
