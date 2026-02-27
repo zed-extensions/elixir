@@ -34,27 +34,19 @@
   (expression_value) @injection.content
   (#set! injection.language "elixir"))
 
-; Syntax highlight for <script> tags
-((tag
-  (start_tag
-    (tag_name) @tag_name (#eq? @tag_name "script"))
-  (text)
-  (end_tag)) @injection.content
-  (#offset! @injection.content 1 0 0 -9)
-  (#set! injection.language "javascript")
-  (#set! injection.include-children)
-  (#set! injection.combined))
+; Syntax highlight for `style="..."` attributes
+(attribute
+  (attribute_name) @_attribute_name
+  (quoted_attribute_value (attribute_value) @injection.content)
+  (#eq? @_attribute_name "style")
+  (#set! injection.language "css"))
 
-; Syntax highlight for <style> tags
-((tag
-  (start_tag
-    (tag_name) @tag_name (#eq? @tag_name "style"))
-  (text)
-  (end_tag)) @injection.content
-  (#offset! @injection.content 1 0 0 -9)
-  (#set! injection.language "css")
-  (#set! injection.include-children)
-  (#set! injection.combined))
+; Syntax highlight for `onEVENT="..."` attributes
+(attribute
+  (attribute_name) @_attribute_name
+  (quoted_attribute_value (attribute_value) @injection.content)
+  (#match? @_attribute_name "^on[a-z]+$")
+  (#set! injection.language "javascript"))
 
 ; Comment parsing languages support
 ((comment) @injection.content
