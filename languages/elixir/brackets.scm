@@ -2,7 +2,15 @@
   "{" @open
   "}" @close)
 
+(map
+  "{" @open
+  "}" @close)
+
 (list
+  "[" @open
+  "]" @close)
+
+(access_call
   "[" @open
   "]" @close)
 
@@ -10,26 +18,22 @@
   "(" @open
   ")" @close)
 
-(map
-  "{" @open
-  "}" @close)
-
-(do_block
-  "do" @open
-  "end" @close)
-
 (arguments
   "(" @open
   ")" @close)
-
-(anonymous_function
-  "fn" @open
-  "end" @close)
 
 (unary_operator
   operator: "&"
   "(" @open
   ")" @close)
+
+(do_block
+  "do" @open
+  "end" @close)
+
+(anonymous_function
+  "fn" @open
+  "end" @close)
 
 (interpolation
   "#{" @open
@@ -47,6 +51,16 @@
   (#set! rainbow.exclude))
 
 (charlist
+  quoted_start: _ @open
+  quoted_end: _ @close
+  (#set! rainbow.exclude))
+
+(quoted_atom
+  quoted_start: _ @open
+  quoted_end: _ @close
+  (#set! rainbow.exclude))
+
+(quoted_keyword
   quoted_start: _ @open
   quoted_end: _ @close
   (#set! rainbow.exclude))
