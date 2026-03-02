@@ -10,7 +10,8 @@
 ((call
   target: (identifier) @run
   (do_block
-    (call target: (identifier) @_keyword
+    (call
+      target: (identifier) @_keyword
       (#any-of? @_keyword "describe" "test" "property")))) @_elixir-module-test
   (#eq? @run "defmodule")
   (#set! tag elixir-module-test))

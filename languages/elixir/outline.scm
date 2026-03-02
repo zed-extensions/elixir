@@ -1,7 +1,8 @@
 ; Module/protocol definitions
 (call
   target: (identifier) @context
-  (arguments (alias) @name)
+  (arguments
+    (alias) @name)
   (#any-of? @context "defmodule" "defprotocol")) @item
 
 ; Protocol implementations
@@ -14,20 +15,24 @@
         key: (keyword) @name
         value: [
           (alias) @name
-          (list "[" @name "]" @name)
+          (list
+            "[" @name
+            "]" @name)
         ]))?)
   (#eq? @context "defimpl")) @item
 
 ; ExUnit setups
 (call
   target: (identifier) @context
-  (arguments (_) @name)?
+  (arguments
+    (_) @name)?
   (#any-of? @context "setup" "setup_all")) @item
 
 ; ExUnit tests
 (call
   target: (identifier) @context
-  (arguments (string) @name)
+  (arguments
+    (string) @name)
   (#any-of? @context "describe" "test")) @item
 
 ; Typespec attributes
@@ -61,12 +66,7 @@
                 ")" @context.extra)))
           operator: "when")
       ]))
-  (#any-of? @context
-    "type"
-    "typep"
-    "opaque"
-    "callback"
-    "macrocallback")) @item
+  (#any-of? @context "type" "typep" "opaque" "callback" "macrocallback")) @item
 
 ; Function/macro definitions
 (call
@@ -90,14 +90,5 @@
         operator: "when")
     ])
   (#any-of? @context
-    "def"
-    "defp"
-    "defdelegate"
-    "defguard"
-    "defguardp"
-    "defmacro"
-    "defmacrop"
-    "defn"
-    "defnp"
-    "deftransform"
-    "deftransformp")) @item
+    "def" "defp" "defdelegate" "defguard" "defguardp" "defmacro" "defmacrop" "defn" "defnp"
+    "deftransform" "deftransformp")) @item

@@ -1,10 +1,16 @@
 [
-  (start_tag ">" @end)
-  (self_closing_tag "/>" @end)
-  (start_slot ">" @end)
-  (self_closing_slot "/>" @end)
-  (start_component ">" @end)
-  (self_closing_component "/>" @end)
+  (start_tag
+    ">" @end)
+  (self_closing_tag
+    "/>" @end)
+  (start_slot
+    ">" @end)
+  (self_closing_slot
+    "/>" @end)
+  (start_component
+    ">" @end)
+  (self_closing_component
+    "/>" @end)
 ] @indent
 
 [

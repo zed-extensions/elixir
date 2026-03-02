@@ -2,30 +2,29 @@
 (unary_operator
   operator: "@"
   operand: (call
-  target: (identifier) @_identifier
-  (arguments [
-    (string (quoted_content) @injection.content)
-    (sigil
-      (sigil_name) @_sigil_name
-      (quoted_content) @injection.content
-      (#any-of? @_sigil_name "S" "s"))
-    (keywords
-      (pair
-        key: ((keyword) @_keyword (#eq? @_keyword "deprecated: "))
-        value: [
-          (string (quoted_content) @injection.content)
-          (sigil
-            (sigil_name) @_sigil_name
-            (quoted_content) @injection.content
-            (#any-of? @_sigil_name "S" "s"))
-        ]))
-  ]))
-  (#any-of? @_identifier
-    "deprecated"
-    "moduledoc"
-    "typedoc"
-    "shortdoc"
-    "doc")
+    target: (identifier) @_identifier
+    (arguments
+      [
+        (string
+          (quoted_content) @injection.content)
+        (sigil
+          (sigil_name) @_sigil_name
+          (quoted_content) @injection.content
+          (#any-of? @_sigil_name "S" "s"))
+        (keywords
+          (pair
+            key: ((keyword) @_keyword
+              (#eq? @_keyword "deprecated: "))
+            value: [
+              (string
+                (quoted_content) @injection.content)
+              (sigil
+                (sigil_name) @_sigil_name
+                (quoted_content) @injection.content
+                (#any-of? @_sigil_name "S" "s"))
+            ]))
+      ]))
+  (#any-of? @_identifier "deprecated" "moduledoc" "typedoc" "shortdoc" "doc")
   (#set! injection.language "markdown"))
 
 ; Regex sigils
@@ -59,9 +58,11 @@
     (atom)?
     (keywords
       (pair
-        key: ((keyword) @_keyword (#eq? @_keyword "doc: "))
+        key: ((keyword) @_keyword
+          (#eq? @_keyword "doc: "))
         value: [
-          (string (quoted_content) @injection.content)
+          (string
+            (quoted_content) @injection.content)
           (sigil
             (sigil_name) @_sigil_name
             (quoted_content) @injection.content

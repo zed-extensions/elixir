@@ -38,15 +38,15 @@
 
 [
   (sigil
-  quoted_start: "\"\"\""
-  quoted_end: "\"\"\"")
+    quoted_start: "\"\"\""
+    quoted_end: "\"\"\"")
   (sigil
-  quoted_start: "\""
-  quoted_end: "\"")
+    quoted_start: "\""
+    quoted_end: "\"")
   (sigil
-  quoted_start: "'''"
-  quoted_end: "'''")
+    quoted_start: "'''"
+    quoted_end: "'''")
   (sigil
-  quoted_start: "'"
-  quoted_end: "'")
+    quoted_start: "'"
+    quoted_end: "'")
 ] @sigil_string

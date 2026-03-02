@@ -35,8 +35,8 @@
 
 ; HEEx tags and slots are highlighted the same as HTML tags
 [
- (tag_name)
- (slot_name)
+  (tag_name)
+  (slot_name)
 ] @tag
 
 ; HEEx components are highlighted the same as Elixir modules and functions

@@ -2,7 +2,10 @@
 (call
   target: ((identifier) @_identifier
     (#any-of? @_identifier "defmodule" "defprotocol" "defimpl"))
-  (do_block "do" (_)* @class.inside "end")) @class.around
+  (do_block
+    "do"
+    (_)* @class.inside
+    "end")) @class.around
 
 ; Anonymous function definitions
 (anonymous_function
@@ -12,21 +15,18 @@
 (call
   target: ((identifier) @_identifier
     (#any-of? @_identifier
-      "def"
-      "defp"
-      "defmacro"
-      "defmacrop"
-      "defn"
-      "defnp"
-      "deftransform"
-      "deftransformp"))
+      "def" "defp" "defmacro" "defmacrop" "defn" "defnp" "deftransform" "deftransformp"))
   (arguments
     (_)
     (keywords
       (pair
-        key: ((keyword) @_keyword (#eq? @_keyword "do: "))
+        key: ((keyword) @_keyword
+          (#eq? @_keyword "do: "))
         value: (_) @function.inside))?)?
-  (do_block "do" (_)* @function.inside "end")?) @function.around
+  (do_block
+    "do"
+    (_)* @function.inside
+    "end")?) @function.around
 
 ; Function definitions from delegations
 (call
@@ -53,16 +53,14 @@
   operator: "@"
   operand: (call
     target: ((identifier) @_identifier
-      (#any-of? @_identifier
-        "deprecated"
-        "moduledoc"
-        "typedoc"
-        "shortdoc"
-        "doc"))
+      (#any-of? @_identifier "deprecated" "moduledoc" "typedoc" "shortdoc" "doc"))
     (arguments
       [
-        (string (quoted_content) @comment.inside)
-        (charlist (quoted_content) @comment.inside)
-        (sigil (quoted_content) @comment.inside)
+        (string
+          (quoted_content) @comment.inside)
+        (charlist
+          (quoted_content) @comment.inside)
+        (sigil
+          (quoted_content) @comment.inside)
         (_) @comment.inside
       ]))) @comment.around
