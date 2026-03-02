@@ -1,12 +1,25 @@
 [
-  (tuple "}" @end)
-  (list "]" @end)
-  (block ")" @end)
-  (map "}" @end)
-  (bitstring ">>" @end)
-  (do_block "end" @end)
-  (anonymous_function "end" @end)
-  (arguments ")" @end)
+  (tuple
+    "}" @end)
+  (map
+    "}" @end)
+  (list
+    "]" @end)
+  (access_call
+    "]" @end)
+  (block
+    ")" @end)
+  (arguments
+    ")" @end)
+  (unary_operator
+    operator: "&"
+    ")" @end)
+  (bitstring
+    ">>" @end)
+  (do_block
+    "end" @end)
+  (anonymous_function
+    "end" @end)
 ] @indent
 
 ; These have no end delimiter that can be captured,

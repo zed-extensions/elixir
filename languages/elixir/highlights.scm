@@ -1,12 +1,10 @@
 ; Punctuations
-[
- "%"
-] @punctuation
+"%" @punctuation
 
 ; Delimiters
 [
- ","
- ";"
+  ","
+  ";"
 ] @punctuation.delimiter
 
 ; Brackets
@@ -25,7 +23,9 @@
 (comment) @comment
 
 ; String interpolations
-(interpolation "#{" @punctuation.special "}" @punctuation.special) @embedded
+(interpolation
+  "#{" @punctuation.special
+  "}" @punctuation.special) @embedded
 
 ; Escape characters (e.g. `\s`, `\n`)
 (escape_sequence) @string.escape
@@ -79,12 +79,7 @@
 
 ; Special identifiers
 ((identifier) @constant.builtin
-  (#any-of? @constant.builtin
-    "__MODULE__"
-    "__DIR__"
-    "__ENV__"
-    "__CALLER__"
-    "__STACKTRACE__"))
+  (#any-of? @constant.builtin "__MODULE__" "__DIR__" "__ENV__" "__CALLER__" "__STACKTRACE__"))
 
 ; Operator identifiers
 (operator_identifier) @operator
@@ -135,7 +130,8 @@
 (call
   target: [
     (identifier) @function
-    (dot right: (identifier) @function)
+    (dot
+      right: (identifier) @function)
   ])
 
 ; Map dot field access
@@ -144,8 +140,7 @@
     right: [
       (identifier)
       (string)
-    ] @property)
-  .)
+    ] @property) .)
 
 ; Remote function/macro calls without parentheses
 (call
@@ -155,8 +150,7 @@
       (atom)
       (quoted_atom)
     ]
-    right: (identifier) @function)
-  .)
+    right: (identifier) @function) .)
 
 ; Parameter placeholders when capturing anonymous functions
 (unary_operator
@@ -230,17 +224,8 @@
         right: (identifier) @variable)
     ])
   (#any-of? @keyword
-    "def"
-    "defp"
-    "defdelegate"
-    "defguard"
-    "defguardp"
-    "defmacro"
-    "defmacrop"
-    "defn"
-    "defnp"
-    "deftransform"
-    "deftransformp"))
+    "def" "defp" "defdelegate" "defguard" "defguardp" "defmacro" "defmacrop" "defn" "defnp"
+    "deftransform" "deftransformp"))
 
 ; Module attributes
 (unary_operator
@@ -260,13 +245,8 @@
     (identifier) @_identifier @comment.doc
     (call
       target: (identifier) @_identifier @comment.doc)
-    ]
-  (#any-of? @_identifier
-    "deprecated"
-    "moduledoc"
-    "typedoc"
-    "shortdoc"
-    "doc"))
+  ]
+  (#any-of? @_identifier "deprecated" "moduledoc" "typedoc" "shortdoc" "doc"))
 
 ; Typespec attributes
 (unary_operator
@@ -275,14 +255,8 @@
     (identifier) @_identifier @enum
     (call
       target: (identifier) @_identifier @enum)
-    ]
-  (#any-of? @_identifier
-    "type"
-    "typep"
-    "opaque"
-    "spec"
-    "callback"
-    "macrocallback"))
+  ]
+  (#any-of? @_identifier "type" "typep" "opaque" "spec" "callback" "macrocallback"))
 
 ; Doc attribute arguments
 (unary_operator
@@ -300,12 +274,7 @@
           quoted_end: _ @comment.doc
           (#any-of? @_sigil_name "C" "c" "S" "s"))
       ] @comment.doc))
-  (#any-of? @_identifier
-    "deprecated"
-    "moduledoc"
-    "typedoc"
-    "shortdoc"
-    "doc"))
+  (#any-of? @_identifier "deprecated" "moduledoc" "typedoc" "shortdoc" "doc"))
 
 ; Typespec attribute arguments
 (unary_operator
@@ -322,62 +291,22 @@
             left: (identifier) @function)
           operator: "when")
       ]))
-  (#any-of? @enum
-    "type"
-    "typep"
-    "opaque"
-    "spec"
-    "callback"
-    "macrocallback"))
+  (#any-of? @enum "type" "typep" "opaque" "spec" "callback" "macrocallback"))
 
 ; Definition keywords
 (call
   target: (identifier) @keyword
   (#any-of? @keyword
-    "def"
-    "defp"
-    "defdelegate"
-    "defoverridable"
-    "defguard"
-    "defguardp"
-    "defmacro"
-    "defmacrop"
-    "defstruct"
-    "defexception"
-    "defrecord"
-    "defrecordp"
-    "defmodule"
-    "defprotocol"
-    "defimpl"
-    "defn"
-    "defnp"
-    "deftransform"
-    "deftransformp"))
+    "def" "defp" "defdelegate" "defoverridable" "defguard" "defguardp" "defmacro" "defmacrop"
+    "defstruct" "defexception" "defrecord" "defrecordp" "defmodule" "defprotocol" "defimpl" "defn"
+    "defnp" "deftransform" "deftransformp"))
 
 ; Kernel/special form keywords
 (call
   target: (identifier) @keyword
   (#any-of? @keyword
-    "alias"
-    "case"
-    "cond"
-    "else"
-    "for"
-    "if"
-    "import"
-    "quote"
-    "raise"
-    "receive"
-    "require"
-    "reraise"
-    "super"
-    "throw"
-    "try"
-    "unless"
-    "unquote"
-    "unquote_splicing"
-    "use"
-    "with"))
+    "alias" "case" "cond" "else" "for" "if" "import" "quote" "raise" "receive" "require" "reraise"
+    "super" "throw" "try" "unless" "unquote" "unquote_splicing" "use" "with"))
 
 ; Reserved keywords
 [
