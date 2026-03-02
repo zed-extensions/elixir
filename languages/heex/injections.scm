@@ -32,14 +32,16 @@
 ; Syntax highlight for `style="..."` attributes
 (attribute
   (attribute_name) @_attribute_name
-  (quoted_attribute_value (attribute_value) @injection.content)
+  (quoted_attribute_value
+    (attribute_value) @injection.content)
   (#eq? @_attribute_name "style")
   (#set! injection.language "css"))
 
 ; Syntax highlight for `onEVENT="..."` attributes
 (attribute
   (attribute_name) @_attribute_name
-  (quoted_attribute_value (attribute_value) @injection.content)
+  (quoted_attribute_value
+    (attribute_value) @injection.content)
   (#match? @_attribute_name "^on[a-z]+$")
   (#set! injection.language "javascript"))
 
