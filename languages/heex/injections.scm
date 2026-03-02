@@ -1,12 +1,8 @@
 ; Expressions are HTML-aware interpolations of Elixir code like
 ; `<link href={ Routes.static_path(..) } />`
-;
-; Note that we include children because `expression_value` nodes may consist
-; of multiple nodes when the value contains `{` and `}`
 (expression
   (expression_value) @injection.content
-  (#set! injection.language "elixir")
-  (#set! injection.include-children))
+  (#set! injection.language "elixir"))
 
 ; Directives are standalone tags like '<%= @x %>'
 ;
@@ -22,7 +18,6 @@
     (ending_expression_value)
   ] @injection.content
   (#set! injection.language "elixir")
-  (#set! injection.include-children)
   (#set! injection.combined))
 
 ; Directives with `expression_value` nodes do not need to be combined.
