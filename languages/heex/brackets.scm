@@ -4,12 +4,8 @@
 
 (directive
   _ @open
-  [
-    (expression_value)
-    (partial_expression_value)
-    (ending_expression_value)
-  ]
-  _ @close)
+  (_)
+  "%>" @close)
 
 (start_tag
   "<" @open
