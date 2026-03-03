@@ -27,8 +27,8 @@
 ;     `<%#` and `%>`
 (comment) @comment
 
-; HEEx operators are highlighted as such
-"=" @operator
+; HEEx operators are highlighted the same as HTML operators
+"=" @punctuation.delimiter.html
 
 ; HEEx inherits the DOCTYPE tag from HTML
 (doctype) @tag.doctype
@@ -42,7 +42,7 @@
 ; HEEx components are highlighted the same as Elixir modules and functions
 (component_name
   [
-    (module) @type
+    (module) @type.module
     (function) @function
     "." @operator
   ])
