@@ -1,7 +1,7 @@
 id = "elixir"
 name = "Elixir"
 description = "Elixir support."
-version = "0.3.3"
+version = "0.3.4"
 schema_version = 1
 authors = [
     "Marshall Bowers <elliott.codes@gmail.com>",
