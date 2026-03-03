@@ -1,0 +1,194 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ribru17/ts_query_ls/refs/heads/master/schemas/config.json",
+  "parser_install_directories": ["./grammars"],
+  "language_retrieval_patterns": [
+    "languages/([^/]+)/[^/]+\\.scm",
+    "grammars/([^/]+)/queries/[^/]+\\.scm"
+  ],
+  "valid_captures": {
+    "brackets": {
+      "open": "Captures opening brackets, braces, and quotes",
+      "close": "Captures closing brackets, braces, and quotes"
+    },
+    "highlights": {
+      "attribute": "Captures attributes",
+      "boolean": "Captures boolean values",
+      "comment": "Captures comments",
+      "comment.doc": "Captures documentation comments",
+      "comment.unused": "Captures unused variables and functions not imported by default",
+      "constant": "Captures constants",
+      "constant.builtin": "Captures built-in constants",
+      "constant.char": "Captures char literals",
+      "constructor": "Captures constructors",
+      "embedded": "Captures embedded content",
+      "emphasis": "Captures emphasized text",
+      "emphasis.strong": "Captures strongly emphasized text",
+      "enum": "Captures enumerations",
+      "function": "Captures functions",
+      "function.builtin": "Captures built-in functions",
+      "function.call": "Captures function calls",
+      "function.method": "Captures methods",
+      "function.method.builtin": "Captures built-in methods",
+      "function.method.call": "Captures method calls",
+      "function.special": "Captures special functions",
+      "function.special.builtin": "Captures built-in special functions",
+      "function.special.call": "Captures built-in function calls",
+      "hint": "Captures hints",
+      "keyword": "Captures keywords",
+      "keyword.exception": "Captures keywords for exception handling",
+      "keyword.import": "Captures import keywords",
+      "label": "Captures labels",
+      "link_text": "Captures link text",
+      "link_uri": "Captures link URIs",
+      "number": "Captures numeric values",
+      "operator": "Captures operators",
+      "predictive": "Captures predictive text",
+      "preproc": "Captures preprocessor directives",
+      "primary": "Captures primary elements",
+      "property": "Captures properties",
+      "punctuation": "Captures punctuation",
+      "punctuation.bracket": "Captures brackets",
+      "punctuation.bracket.html": "Captures HTML brackets",
+      "punctuation.delimiter": "Captures delimiters",
+      "punctuation.delimiter.html": "Captures HTML delimiters",
+      "punctuation.list_marker": "Captures list markers",
+      "punctuation.special": "Captures special punctuation",
+      "string": "Captures string literals",
+      "string.escape": "Captures escaped characters in strings",
+      "string.regex": "Captures regular expressions",
+      "string.special": "Captures special strings",
+      "string.special.symbol": "Captures special symbols",
+      "tag": "Captures tags",
+      "tag.doctype": "Captures doctypes (e.g. in HTML)",
+      "text.literal": "Captures literal text",
+      "title": "Captures titles",
+      "type": "Captures types",
+      "type.builtin": "Captures built-in types",
+      "type.interface": "Captures interface types",
+      "type.module": "Captures modules",
+      "type.spec": "Captures typespecs",
+      "type.super": "Captures superclass types",
+      "variable": "Captures variables",
+      "variable.parameter": "Captures function/method parameters",
+      "variable.special": "Captures special variables",
+      "variant": "Captures variants"
+    },
+    "indents": {
+      "start": "Captures starting brackets and braces",
+      "end": "Captures closing brackets and braces",
+      "indent": "Captures entire arrays and objects for indentation",
+      "outdent": "Captures entire arrays and objects for outdentation"
+    },
+    "injections": {
+      "injection.language": "Captures the language identifier for a code block",
+      "injection.content": "Captures the content to be treated as a different language"
+    },
+    "outline": {
+      "name": "Captures the content of object keys",
+      "item": "Captures the entire key-value pair",
+      "context": "Captures elements that provide context for the outline item",
+      "context.extra": "Captures additional contextual information for the outline item",
+      "open": "Captures the opening of the outline item",
+      "close": "Captures the closing of the outline item",
+      "annotation": "Captures nodes that annotate the outline item (doc comments, attributes, decorators)"
+    },
+    "overrides": {
+      "capture": "Captures anonymous function parameter placeholders",
+      "char": "Captures char literals",
+      "comment": "Captures block comments",
+      "comment.inclusive": "Captures line comments",
+      "function": "Captures function identifiers",
+      "identifier": "Captures all identifiers (i.e. variables, functions, atoms, keywords, and attributes)",
+      "quoted_atom": "Captures quoted atoms",
+      "sigil_curly": "Captures sigils using curly bracket delimiters",
+      "sigil_round": "Captures sigils using parenthesis delimiters",
+      "sigil_square": "Captures sigils using square bracket delimiters",
+      "sigil_string": "Captures sigils using string delimiters",
+      "string": "Captures strings"
+    },
+    "redactions": {
+      "redact": "Captures values to be redacted"
+    },
+    "runnables": {
+      "_name": "Captures the \"scripts\" key",
+      "run": "Captures the script name",
+      "script": "Captures the script name as well (for different purposes)",
+      "_elixir-test": "Captures Elixir tests",
+      "_elixir-module-test": "Captures Elixir test modules"
+    },
+    "textobjects": {
+      "function.around": "Captures entire function definitions or equivalent small sections of a file",
+      "function.inside": "Captures function bodies (the stuff within the braces)",
+      "class.around": "Captures entire class definitions or equivalent large sections of a file",
+      "class.inside": "Captures the contents of class definitions",
+      "comment.around": "Captures entire comments (e.g. all adjacent line comments, or block comments)",
+      "comment.inside": "Captures the contents of comments"
+    }
+  },
+  "valid_predicates": {
+    "eq": {
+      "description": "Matches if the capture's text is equal to the provided string or another capture",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "not-eq": {
+      "description": "Matches if the capture's text is not equal to the provided string or another capture",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "match": {
+      "description": "Matches if the capture's text matches the provided regular expression",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "not-match": {
+      "description": "Matches if the capture's text does not match the provided regular expression",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "any-of": {
+      "description": "Matches if the capture's text is equal to any of the provided strings",
+      "parameters": [
+        { "type": "capture" },
+        { "type": "string", "arity": "variadic" }
+      ]
+    },
+    "any-eq": {
+      "description": "Matches if any node in a quantified capture equals the provided value",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "any-not-eq": {
+      "description": "Matches if any node in a quantified capture does not equal the provided value",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "any-match": {
+      "description": "Matches if any node in a quantified capture matches the provided regex",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "any-not-match": {
+      "description": "Matches if any node in a quantified capture does not match the provided regex",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "is": {
+      "description": "Asserts that a capture has a given property",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    },
+    "is-not": {
+      "description": "Asserts that a capture does not have a given property",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    }
+  },
+  "valid_directives": {
+    "set": {
+      "description": "Associates key-value metadata with a pattern or capture",
+      "parameters": [
+        { "type": "string", "description": "key" },
+        { "type": "string", "description": "value", "arity": "optional" }
+      ]
+    },
+    "select-adjacent": {
+      "description": "Filters text to preserve only nodes adjacent to another capture",
+      "parameters": [{ "type": "capture" }, { "type": "capture" }]
+    },
+    "strip": {
+      "description": "Removes text matched by a regular expression from a capture",
+      "parameters": [{ "type": "capture" }, { "type": "string" }]
+    }
+  }
+}
