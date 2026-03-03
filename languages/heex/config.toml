@@ -1,4 +1,4 @@
-name = "HEEX"
+name = "HEEx"
 grammar = "heex"
 path_suffixes = ["heex", "html.eex", "leex", "neex"]
 block_comment = { start = "<%!-- ", prefix = "", end = " --%>", tab_size = 0 }
