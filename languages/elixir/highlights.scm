@@ -57,10 +57,10 @@
 ] @string
 
 ; Char literals (e.g. `?a`, `?{`)
-(char) @constant
+(char) @constant.char
 
 ; Modules
-(alias) @type
+(alias) @type.module
 
 ; Erlang modules
 (call
@@ -68,7 +68,7 @@
     left: [
       (atom)
       (quoted_atom)
-    ] @type))
+    ] @type.module))
 
 ; Regular identifiers
 (identifier) @variable
@@ -76,10 +76,6 @@
 ; Unused identifiers
 ((identifier) @comment.unused
   (#match? @comment.unused "^_"))
-
-; Special identifiers
-((identifier) @constant.builtin
-  (#any-of? @constant.builtin "__MODULE__" "__DIR__" "__ENV__" "__CALLER__" "__STACKTRACE__"))
 
 ; Operator identifiers
 (operator_identifier) @operator
@@ -130,8 +126,14 @@
 (call
   target: [
     (identifier) @function
+    ((identifier) @comment.unused
+      (#match? @comment.unused "^_"))
     (dot
-      right: (identifier) @function)
+      right: [
+        (identifier) @function
+        ((identifier) @comment.unused
+          (#match? @comment.unused "^_"))
+      ])
   ])
 
 ; Map dot field access
@@ -150,7 +152,11 @@
       (atom)
       (quoted_atom)
     ]
-    right: (identifier) @function) .)
+    right: [
+      (identifier) @function
+      ((identifier) @comment.unused
+        (#match? @comment.unused "^_"))
+    ]) .)
 
 ; Parameter placeholders when capturing anonymous functions
 (unary_operator
@@ -162,8 +168,14 @@
   operator: "&"
   operand: [
     (identifier) @function
+    ((identifier) @comment.unused
+      (#match? @comment.unused "^_"))
     (binary_operator
-      left: (identifier) @function
+      left: [
+        (identifier) @function
+        ((identifier) @comment.unused
+          (#match? @comment.unused "^_"))
+      ]
       operator: "/")
   ])
 
@@ -173,7 +185,7 @@
   operand: [
     (atom)
     (quoted_atom)
-  ] @type)
+  ] @type.module)
 
 ; Capture functions from a map field/variable holding a module
 (unary_operator
@@ -181,18 +193,30 @@
   operand: [
     (call
       target: (dot
-        right: (identifier) @function))
+        right: [
+          (identifier) @function
+          ((identifier) @comment.unused
+            (#match? @comment.unused "^_"))
+        ]))
     (binary_operator
       left: (call
         target: (dot
-          right: (identifier) @function))
+          right: [
+            (identifier) @function
+            ((identifier) @comment.unused
+              (#match? @comment.unused "^_"))
+          ]))
       operator: "/")
   ])
 
 ; Piping into a local function/macro that has no parentheses
 (binary_operator
   operator: "|>"
-  right: (identifier) @function)
+  right: [
+    (identifier) @function
+    ((identifier) @comment.unused
+      (#match? @comment.unused "^_"))
+  ])
 
 ; Piping into a remote Erlang function
 (binary_operator
@@ -200,14 +224,18 @@
   right: [
     (atom)
     (quoted_atom)
-  ] @type)
+  ] @type.module)
 
 ; Piping into a map field/variable holding a module that has no parentheses
 (binary_operator
   operator: "|>"
   right: (call
     target: (dot
-      right: (identifier) @function)))
+      right: [
+        (identifier) @function
+        ((identifier) @comment.unused
+          (#match? @comment.unused "^_"))
+      ])))
 
 ; Function/macro definitions
 (call
@@ -215,8 +243,14 @@
   (arguments
     [
       (identifier) @function
+      ((identifier) @comment.unused
+        (#match? @comment.unused "^_"))
       (binary_operator
-        left: (identifier) @function
+        left: [
+          (identifier) @function
+          ((identifier) @comment.unused
+            (#match? @comment.unused "^_"))
+        ]
         operator: "when")
       ; Targets the function definition for piping in the Kernel module
       (binary_operator
@@ -250,11 +284,11 @@
 
 ; Typespec attributes
 (unary_operator
-  operator: "@" @enum
+  operator: "@" @type.spec
   operand: [
-    (identifier) @_identifier @enum
+    (identifier) @_identifier @type.spec
     (call
-      target: (identifier) @_identifier @enum)
+      target: (identifier) @_identifier @type.spec)
   ]
   (#any-of? @_identifier "type" "typep" "opaque" "spec" "callback" "macrocallback"))
 
@@ -280,18 +314,32 @@
 (unary_operator
   operator: "@"
   operand: (call
-    target: (identifier) @enum
+    target: (identifier) @type.spec
     (arguments
       [
         (identifier) @function
+        ((identifier) @comment.unused
+          (#match? @comment.unused "^_"))
         (binary_operator
-          left: (identifier) @function)
+          left: [
+            (identifier) @function
+            ((identifier) @comment.unused
+              (#match? @comment.unused "^_"))
+          ])
         (binary_operator
           left: (binary_operator
-            left: (identifier) @function)
+            left: [
+              (identifier) @function
+              ((identifier) @comment.unused
+                (#match? @comment.unused "^_"))
+            ])
           operator: "when")
       ]))
-  (#any-of? @enum "type" "typep" "opaque" "spec" "callback" "macrocallback"))
+  (#any-of? @type.spec "type" "typep" "opaque" "spec" "callback" "macrocallback"))
+
+; Special identifiers
+((identifier) @constant.builtin
+  (#any-of? @constant.builtin "__MODULE__" "__DIR__" "__ENV__" "__CALLER__" "__STACKTRACE__"))
 
 ; Definition keywords
 (call
