@@ -15,9 +15,10 @@
   "}"
 ] @punctuation.bracket
 
-; HEEx partial expressions can use the following tag delimiters:
+; HEEx directive expressions can use the following tag delimiters:
 ;     `<%` and `%>`
 ;     `<%=` and `%>`
+;     `<%%` and `%>`
 ;     `<%%=` and `%>`
 (directive) @keyword
 
@@ -29,6 +30,9 @@
 
 ; HEEx operators are highlighted the same as HTML operators
 "=" @punctuation.delimiter.html
+
+; HEEx entities are highligted the same as HTML entities
+(entity) @string.special
 
 ; HEEx inherits the DOCTYPE tag from HTML
 (doctype) @tag.doctype
