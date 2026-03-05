@@ -207,9 +207,12 @@ impl Expert {
 
     pub fn language_server_workspace_configuration(
         &mut self,
-        _worktree: &Worktree,
+        worktree: &Worktree,
     ) -> Result<Option<Value>> {
-        Ok(None)
+        let settings = config::get_workspace_configuration(Self::LANGUAGE_SERVER_ID, worktree)
+            .unwrap_or_default();
+
+        Ok(Some(settings))
     }
 
     pub fn label_for_completion(&self, completion: Completion) -> Option<CodeLabel> {
