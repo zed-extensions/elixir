@@ -13,44 +13,52 @@ repository = "https://github.com/zed-extensions/elixir"
 name = "Expert"
 languages = [
     "Elixir",
+    "EEx",
     "HEEx",
 ]
 
 [language_servers.expert.language_ids]
 "Elixir" = "elixir"
+"EEx" = "eex"
 "HEEx" = "heex"
 
 [language_servers.elixir-ls]
 name = "ElixirLS"
 languages = [
     "Elixir",
+    "EEx",
     "HEEx",
 ]
 
 [language_servers.elixir-ls.language_ids]
 "Elixir" = "elixir"
+"EEx" = "eex"
 "HEEx" = "heex"
 
 [language_servers.next-ls]
 name = "Next LS"
 languages = [
     "Elixir",
+    "EEx",
     "HEEx",
 ]
 
 [language_servers.next-ls.language_ids]
 "Elixir" = "elixir"
+"EEx" = "eex"
 "HEEx" = "heex"
 
 [language_servers.lexical]
 name = "Lexical"
 languages = [
     "Elixir",
+    "EEx",
     "HEEx",
 ]
 
 [language_servers.lexical.language_ids]
 "Elixir" = "elixir"
+"EEx" = "eex"
 "HEEx" = "heex"
 
 [grammars.elixir]
