@@ -262,6 +262,13 @@ impl Expert {
                 let display_range = defmodule.len()..defmodule.len() + name.len();
                 (code, filter_range, display_range)
             }
+            SymbolKind::Function | SymbolKind::Constant => {
+                let def = "def ";
+                let code = format!("{def}{name}");
+                let filter_range = 0..name.len();
+                let display_range = def.len()..def.len() + name.len();
+                (code, filter_range, display_range)
+            }
             _ => return None,
         };
 

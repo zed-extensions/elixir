@@ -249,6 +249,12 @@ impl NextLs {
                 let display_range = def.len()..def.len() + name.len();
                 (code, filter_range, display_range)
             }
+            SymbolKind::Property => {
+                let code = name.clone();
+                let filter_range = 0..code.len();
+                let display_range = 0..code.len();
+                (code, filter_range, display_range)
+            }
             _ => return None,
         };
 

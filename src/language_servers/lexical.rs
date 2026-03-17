@@ -2,7 +2,7 @@ use std::fs;
 
 use zed_extension_api::{
     self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
-    lsp::{Completion, CompletionKind, Symbol},
+    lsp::{Completion, CompletionKind, Symbol, SymbolKind},
     serde_json::Value,
 };
 
@@ -210,7 +210,37 @@ impl Lexical {
         }
     }
 
-    pub fn label_for_symbol(&self, _symbol: Symbol) -> Option<CodeLabel> {
-        None
+    pub fn label_for_symbol(&self, symbol: Symbol) -> Option<CodeLabel> {
+        let name = &symbol.name;
+
+        let (code, filter_range, display_range) = match symbol.kind {
+            SymbolKind::Module | SymbolKind::Class | SymbolKind::Interface | SymbolKind::Struct => {
+                let defmodule = "defmodule ";
+                let code = format!("{defmodule}{name}");
+                let filter_range = 0..name.len();
+                let display_range = defmodule.len()..defmodule.len() + name.len();
+                (code, filter_range, display_range)
+            }
+            SymbolKind::Function => {
+                let def = "def ";
+                let code = format!("{def}{name}");
+                let filter_range = 0..name.len();
+                let display_range = def.len()..def.len() + name.len();
+                (code, filter_range, display_range)
+            }
+            SymbolKind::Constant => {
+                let code = name.clone();
+                let filter_range = 0..code.len();
+                let display_range = 0..code.len();
+                (code, filter_range, display_range)
+            }
+            _ => return None,
+        };
+
+        Some(CodeLabel {
+            spans: vec![CodeLabelSpan::code_range(display_range)],
+            filter_range: filter_range.into(),
+            code,
+        })
     }
 }
