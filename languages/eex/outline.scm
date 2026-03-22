@@ -1,0 +1,8 @@
+[
+  (comment
+    "<%!--"
+    "--%>")
+  (comment
+    "<%#"
+    "%>")
+] @annotation

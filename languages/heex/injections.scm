@@ -4,9 +4,9 @@
   (expression_value) @injection.content
   (#set! injection.language "elixir"))
 
-; Directives are standalone tags like '<%= @x %>'
+; Directives are standalone tags like `<%= @x %>`
 ;
-; Directives with `partial_expression_value` and `ending_expression_value`
+; Directives with `partial_expression_value` or `ending_expression_value`
 ; nodes are Elixir code that is part of an expression that spans multiple
 ; `directive` nodes, so they must be combined. For example:
 ;     <%= if true do %>

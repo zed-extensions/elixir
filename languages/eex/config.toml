@@ -1,0 +1,16 @@
+name = "EEx"
+grammar = "heex"
+path_suffixes = ["eex"]
+block_comment = { start = "<%!-- ", prefix = "", end = " --%>", tab_size = 0 }
+autoclose_before = ";:.,=}])>%"
+brackets = [
+    { start = "{", end = "}", close = true, newline = true },
+    { start = "[", end = "]", close = true, newline = true },
+    { start = "(", end = ")", close = true, newline = true },
+    { start = "<", end = ">", close = true, newline = true },
+    { start = "%", end = "%", close = true, newline = true },
+    { start = "\"", end = "\"", close = true, newline = false, not_in = ["comment"] },
+    { start = "'", end = "'", close = true, newline = false, not_in = ["comment"] },
+    { start = "!--", end = " --", close = true, newline = false, not_in = ["comment"] },
+]
+tab_size = 2

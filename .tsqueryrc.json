@@ -5,6 +5,9 @@
     "languages/([^/]+)/[^/]+\\.scm",
     "grammars/([^/]+)/queries/[^/]+\\.scm"
   ],
+  "parser_aliases": {
+    "eex": "heex"
+  },
   "valid_captures": {
     "brackets": {
       "open": "Captures opening brackets, braces, and quotes",
