@@ -12,30 +12,39 @@ brackets = [
         "comment",
         "string",
         "quoted_atom",
-        "sigil_string",
+        "sigil_quote",
     ] },
     { start = "\"", end = "\"", close = true, newline = false, not_in = [
         "comment",
         "string",
         "quoted_atom",
-        "sigil_string",
+        "sigil_quote",
     ] },
     { start = "'''", end = "\n'''", close = true, newline = true, not_in = [
         "comment",
         "string",
         "quoted_atom",
-        "sigil_string",
+        "sigil_quote",
     ] },
     { start = "'", end = "'", close = true, newline = false, not_in = [
         "comment",
         "string",
         "quoted_atom",
-        "sigil_string",
+        "sigil_quote",
     ] },
 ]
 tab_size = 2
 decrease_indent_pattern = '^\s*(after|catch|else|rescue)$'
-scope_opt_in_language_servers = ["tailwindcss-language-server"]
+scope_opt_in_language_servers = [
+    "tailwindcss-language-server",
+    "emmet-language-server",
+]
+
+[overrides.heex]
+opt_into_language_servers = [
+    "tailwindcss-language-server",
+    "emmet-language-server",
+]
 
 [overrides.string]
 completion_query_characters = ["-"]

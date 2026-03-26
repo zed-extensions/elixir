@@ -100,13 +100,14 @@
       "char": "Captures char literals",
       "comment": "Captures block comments",
       "comment.inclusive": "Captures line comments",
-      "function": "Captures function identifiers",
-      "identifier": "Captures all identifiers (i.e. variables, functions, atoms, keywords, and attributes)",
+      "elixir": "Captures Elixir expressions",
+      "heex": "Captures HEEx templates",
+      "identifier": "Captures all identifiers (i.e. variables, functions, atoms, keywords, and module attributes)",
       "quoted_atom": "Captures quoted atoms",
       "sigil_curly": "Captures sigils using curly bracket delimiters",
-      "sigil_round": "Captures sigils using parenthesis delimiters",
+      "sigil_round": "Captures sigils using round bracket delimiters",
       "sigil_square": "Captures sigils using square bracket delimiters",
-      "sigil_string": "Captures sigils using string delimiters",
+      "sigil_quote": "Captures sigils using quote mark delimiters",
       "string": "Captures strings"
     },
     "redactions": {

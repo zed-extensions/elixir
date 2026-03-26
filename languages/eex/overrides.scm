@@ -1,3 +1,4 @@
+; Comments
 [
   (comment
     "<%!--"
@@ -6,3 +7,6 @@
     "<%#"
     "%>")
 ] @comment
+
+; Elixir expressions
+(directive) @elixir

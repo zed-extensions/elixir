@@ -15,11 +15,25 @@ brackets = [
     { start = "!--", end = " --", close = true, newline = false, not_in = ["comment", "string"] },
 ]
 tab_size = 2
-scope_opt_in_language_servers = ["tailwindcss-language-server"]
+scope_opt_in_language_servers = [
+    "elixir-ls",
+    "expert",
+    "next-ls",
+    "lexical",
+    "tailwindcss-language-server",
+]
+
+[overrides.elixir]
+opt_into_language_servers = [
+    "elixir-ls",
+    "expert",
+    "next-ls",
+    "lexical",
+]
 
 [overrides.string]
 completion_query_characters = ["-"]
 opt_into_language_servers = ["tailwindcss-language-server"]
 
-[overrides.function]
-word_characters = ["!", "?"]
+[overrides.identifier]
+word_characters = ["!", "?", "@"]
