@@ -1,8 +1,20 @@
+; Comments
 (comment) @comment
 
+; HEEx attribute values
 [
   (attribute_value)
   (quoted_attribute_value)
 ] @string
 
-(function) @function
+; Function and slot identifiers
+[
+  (function)
+  (slot_name)
+] @identifier
+
+; Elixir expressions
+[
+  (expression)
+  (directive)
+] @elixir

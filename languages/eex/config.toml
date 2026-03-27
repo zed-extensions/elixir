@@ -14,3 +14,17 @@ brackets = [
     { start = "!--", end = " --", close = true, newline = false, not_in = ["comment"] },
 ]
 tab_size = 2
+scope_opt_in_language_servers = [
+    "elixir-ls",
+    "expert",
+    "next-ls",
+    "lexical",
+]
+
+[overrides.elixir]
+opt_into_language_servers = [
+    "elixir-ls",
+    "expert",
+    "next-ls",
+    "lexical",
+]
