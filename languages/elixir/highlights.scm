@@ -102,6 +102,9 @@
   quoted_start: _ @string.special
   quoted_end: _ @string.special) @string.special
 
+; Sigil modifiers
+(sigil_modifiers) @label.modifier
+
 ; String/charlist sigils
 (sigil
   (sigil_name) @_sigil_name @string
@@ -114,6 +117,7 @@
   (sigil_name) @_sigil_name @string.regex
   quoted_start: _ @string.regex
   quoted_end: _ @string.regex
+  (sigil_modifiers)? @keyword.operator.regex
   (#any-of? @_sigil_name "R" "r")) @string.regex
 
 ; Phoenix HEEx template sigil
@@ -239,7 +243,7 @@
 
 ; Function/macro definitions
 (call
-  target: (identifier) @keyword
+  target: (identifier) @keyword.definition
   (arguments
     [
       (identifier) @function
@@ -257,7 +261,7 @@
         operator: "|>"
         right: (identifier) @variable)
     ])
-  (#any-of? @keyword
+  (#any-of? @keyword.definition
     "def" "defp" "defdelegate" "defguard" "defguardp" "defmacro" "defmacrop" "defn" "defnp"
     "deftransform" "deftransformp"))
 
@@ -343,32 +347,64 @@
 
 ; Definition keywords
 (call
-  target: (identifier) @keyword
-  (#any-of? @keyword
+  target: (identifier) @keyword.definition
+  (#any-of? @keyword.definition
     "def" "defp" "defdelegate" "defoverridable" "defguard" "defguardp" "defmacro" "defmacrop"
     "defstruct" "defexception" "defrecord" "defrecordp" "defmodule" "defprotocol" "defimpl" "defn"
     "defnp" "deftransform" "deftransformp"))
 
-; Kernel/special form keywords
-(call
-  target: (identifier) @keyword
-  (#any-of? @keyword
-    "alias" "case" "cond" "else" "for" "if" "import" "quote" "raise" "receive" "require" "reraise"
-    "super" "throw" "try" "unless" "unquote" "unquote_splicing" "use" "with"))
+; Reserved definition keyword
+"fn" @keyword.definition
 
-; Reserved keywords
+; Module import keywords
+(call
+  target: (identifier) @keyword.import
+  (#any-of? @keyword.import "alias" "import" "require" "use"))
+
+; Control flow keywords
+(call
+  target: (identifier) @keyword.control.conditional
+  (#any-of? @keyword.control.conditional "case" "cond" "if" "receive" "unless" "with"))
+
+; Reserved control flow keywords
 [
-  "when"
-  "and"
-  "or"
-  "not"
-  "in"
-  "not in"
-  "fn"
-  "do"
-  "end"
-  "catch"
-  "rescue"
   "after"
   "else"
+] @keyword.control.conditional
+
+; List comprehension keyword
+(call
+  target: (identifier) @keyword.control.repeat
+  (#eq? @keyword.control.repeat "for"))
+
+; Exception handling keywords
+(call
+  target: (identifier) @keyword.exception
+  (#any-of? @keyword.exception "raise" "reraise" "throw" "try"))
+
+; Reserved exception handling keywords
+[
+  "catch"
+  "rescue"
+] @keyword.exception
+
+; Metaprogramming keywords
+(call
+  target: (identifier) @keyword
+  (#any-of? @keyword "quote" "super" "unquote" "unquote_splicing"))
+
+; Operator keywords
+[
+  "and"
+  "in"
+  "not"
+  "not in"
+  "or"
+  "when"
+] @keyword.operator
+
+; Do-end block keywords
+[
+  "do"
+  "end"
 ] @keyword
