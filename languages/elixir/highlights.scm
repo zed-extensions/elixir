@@ -38,11 +38,11 @@
   (quoted_keyword)
 ] @string.special.symbol
 
-; Special atom literals
-[
-  (boolean)
-  (nil)
-] @constant
+; Boolean literals
+(boolean) @boolean
+
+; Nil literal
+(nil) @constant.builtin
 
 ; Number literals
 [
