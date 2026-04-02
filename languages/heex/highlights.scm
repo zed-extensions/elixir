@@ -46,7 +46,7 @@
 ; HEEx components are highlighted the same as Elixir modules and functions
 (component_name
   [
-    (module) @type.module
+    (module) @type @module
     (function) @function
     "." @operator
   ])

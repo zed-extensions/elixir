@@ -60,7 +60,7 @@
 (char) @constant.char
 
 ; Modules
-(alias) @type.module
+(alias) @type @module
 
 ; Erlang modules
 (call
@@ -68,7 +68,7 @@
     left: [
       (atom)
       (quoted_atom)
-    ] @type.module))
+    ] @type @module))
 
 ; Structs
 (struct
@@ -76,7 +76,7 @@
     (alias)
     (atom)
     (quoted_atom)
-  ] @type.module.struct)
+  ] @type @module.struct)
 
 ; Regular identifiers
 (identifier) @variable
@@ -111,7 +111,7 @@
   quoted_end: _ @string.special) @string.special
 
 ; Sigil modifiers
-(sigil_modifiers) @label.modifier
+(sigil_modifiers) @label @modifier
 
 ; String/charlist sigils
 (sigil
@@ -197,7 +197,7 @@
   operand: [
     (atom)
     (quoted_atom)
-  ] @type.module)
+  ] @type @module)
 
 ; Capture functions from a map field/variable holding a module
 (unary_operator
@@ -236,7 +236,7 @@
   right: [
     (atom)
     (quoted_atom)
-  ] @type.module)
+  ] @type @module)
 
 ; Piping into a map field/variable holding a module that has no parentheses
 (binary_operator
