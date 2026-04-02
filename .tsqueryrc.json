@@ -77,6 +77,7 @@
       "type.builtin": "Captures built-in types",
       "type.interface": "Captures interface types",
       "type.module": "Captures modules",
+      "type.module.struct": "Captures structs",
       "type.spec": "Captures typespecs",
       "type.super": "Captures superclass types",
       "variable": "Captures variables",
