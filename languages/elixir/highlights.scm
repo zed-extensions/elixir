@@ -70,6 +70,14 @@
       (quoted_atom)
     ] @type.module))
 
+; Structs
+(struct
+  [
+    (alias)
+    (atom)
+    (quoted_atom)
+  ] @type.module.struct)
+
 ; Regular identifiers
 (identifier) @variable
 
