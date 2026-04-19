@@ -1,6 +1,7 @@
 name = "Elixir"
 grammar = "elixir"
 path_suffixes = ["ex", "exs", "mix.lock"]
+first_line_pattern = '^#!.*\belixir\b'
 line_comments = ["# "]
 autoclose_before = ";:.,=}])>"
 brackets = [
