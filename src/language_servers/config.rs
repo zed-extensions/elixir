@@ -5,7 +5,7 @@ use zed_extension_api::{
 };
 
 pub(super) fn get_initialization_options(
-    language_server_id: &'static str,
+    language_server_id: &str,
     worktree: &Worktree,
 ) -> Option<Value> {
     LspSettings::for_worktree(language_server_id, worktree)
@@ -14,7 +14,7 @@ pub(super) fn get_initialization_options(
 }
 
 pub(super) fn get_workspace_configuration(
-    language_server_id: &'static str,
+    language_server_id: &str,
     worktree: &Worktree,
 ) -> Option<Value> {
     LspSettings::for_worktree(language_server_id, worktree)
@@ -23,7 +23,7 @@ pub(super) fn get_workspace_configuration(
 }
 
 pub(super) fn get_binary_settings(
-    language_server_id: &'static str,
+    language_server_id: &str,
     worktree: &Worktree,
 ) -> Option<CommandSettings> {
     LspSettings::for_worktree(language_server_id, worktree)
