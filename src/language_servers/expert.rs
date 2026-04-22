@@ -80,7 +80,7 @@ impl Expert {
         );
 
         let release = match zed::latest_github_release(
-            "elixir-lang/expert",
+            "expert-lsp/expert",
             zed::GithubReleaseOptions {
                 require_assets: true,
                 pre_release: false,
