@@ -2,10 +2,7 @@ use std::fs;
 
 use zed_extension_api::Result;
 
-pub(super) fn remove_outdated_versions(
-    language_server_id: &'static str,
-    version_dir: &str,
-) -> Result<()> {
+pub(super) fn remove_outdated_versions(language_server_id: &str, version_dir: &str) -> Result<()> {
     let entries = fs::read_dir(".").map_err(|e| format!("failed to list working directory {e}"))?;
     for entry in entries {
         let entry = entry.map_err(|e| format!("failed to load directory entry {e}"))?;
@@ -18,10 +15,7 @@ pub(super) fn remove_outdated_versions(
     Ok(())
 }
 
-pub(super) fn find_existing_binary(
-    language_server_id: &'static str,
-    binary_name: &str,
-) -> Option<String> {
+pub(super) fn find_existing_binary(language_server_id: &str, binary_name: &str) -> Option<String> {
     fs::read_dir(".").ok()?.flatten().find_map(|entry| {
         let binary_path = entry.path().join(binary_name);
 
