@@ -15,6 +15,7 @@ struct ElixirLsBinary {
 
 pub struct ElixirLs {
     cached_binary_path: Option<String>,
+    cached_debug_adapter_path: Option<String>,
 }
 
 impl ElixirLs {
@@ -23,6 +24,7 @@ impl ElixirLs {
     pub fn new() -> Self {
         Self {
             cached_binary_path: None,
+            cached_debug_adapter_path: None,
         }
     }
 
@@ -31,7 +33,7 @@ impl ElixirLs {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<zed::Command> {
-        let elixir_ls = self.language_server_binary(language_server_id, worktree)?;
+        let elixir_ls = self.language_server_binary(Some(language_server_id), worktree)?;
 
         Ok(zed::Command {
             command: elixir_ls.path,
@@ -40,9 +42,36 @@ impl ElixirLs {
         })
     }
 
+    pub fn get_debug_adapter_path(&mut self, worktree: &Worktree) -> Result<String> {
+        if let Some(debug_path) = &self.cached_debug_adapter_path {
+            if fs::metadata(debug_path).is_ok_and(|stat| stat.is_file()) {
+                return Self::make_absolute(debug_path);
+            }
+        }
+
+        self.language_server_binary(None, worktree)?;
+
+        let path = self
+            .cached_debug_adapter_path
+            .as_deref()
+            .ok_or_else(|| "debug adapter path could not be determined".to_string())?;
+
+        Self::make_absolute(path)
+    }
+
+    fn make_absolute(path: &str) -> Result<String> {
+        let p = std::path::Path::new(path);
+        if p.is_absolute() {
+            return Ok(path.to_string());
+        }
+        std::env::current_dir()
+            .map(|cwd| cwd.join(p).to_string_lossy().to_string())
+            .map_err(|e| format!("failed to resolve debug adapter path: {e}"))
+    }
+
     fn language_server_binary(
         &mut self,
-        language_server_id: &LanguageServerId,
+        language_server_id: Option<&LanguageServerId>,
         worktree: &Worktree,
     ) -> Result<ElixirLsBinary> {
         let (platform, _arch) = zed::current_platform();
@@ -58,6 +87,9 @@ impl ElixirLs {
         let debug_adapter = format!("debug_adapter.{extension}");
 
         if let Some(binary_path) = config::get_binary_path(&binary_settings) {
+            self.cached_debug_adapter_path = std::path::Path::new(&binary_path)
+                .parent()
+                .map(|p| p.join(&debug_adapter).to_string_lossy().to_string());
             return Ok(ElixirLsBinary {
                 path: binary_path,
                 args: binary_args,
@@ -65,6 +97,9 @@ impl ElixirLs {
         }
 
         if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
+            self.cached_debug_adapter_path = std::path::Path::new(&binary_path)
+                .parent()
+                .map(|p| p.join(&debug_adapter).to_string_lossy().to_string());
             return Ok(ElixirLsBinary {
                 path: binary_path,
                 args: binary_args,
@@ -80,10 +115,12 @@ impl ElixirLs {
             });
         }
 
-        zed::set_language_server_installation_status(
-            language_server_id,
-            &zed::LanguageServerInstallationStatus::CheckingForUpdate,
-        );
+        if let Some(id) = language_server_id {
+            zed::set_language_server_installation_status(
+                id,
+                &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+            );
+        }
 
         let release = match zed::latest_github_release(
             "elixir-lsp/elixir-ls",
@@ -97,6 +134,9 @@ impl ElixirLs {
                 if let Some(binary_path) =
                     util::find_existing_binary(Self::LANGUAGE_SERVER_ID, &binary_name)
                 {
+                    self.cached_debug_adapter_path = std::path::Path::new(&binary_path)
+                        .parent()
+                        .map(|p| p.join(&debug_adapter).to_string_lossy().to_string());
                     self.cached_binary_path = Some(binary_path.clone());
                     return Ok(ElixirLsBinary {
                         path: binary_path,
@@ -125,10 +165,12 @@ impl ElixirLs {
         let debug_path = format!("{}/{}", version_dir, debug_adapter);
 
         if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
-            zed::set_language_server_installation_status(
-                language_server_id,
-                &zed::LanguageServerInstallationStatus::Downloading,
-            );
+            if let Some(id) = language_server_id {
+                zed::set_language_server_installation_status(
+                    id,
+                    &zed::LanguageServerInstallationStatus::Downloading,
+                );
+            }
 
             zed::download_file(
                 &asset.download_url,
@@ -144,6 +186,7 @@ impl ElixirLs {
             util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
 
+        self.cached_debug_adapter_path = Some(debug_path);
         self.cached_binary_path = Some(binary_path.clone());
         Ok(ElixirLsBinary {
             path: binary_path,

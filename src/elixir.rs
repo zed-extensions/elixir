@@ -1,9 +1,11 @@
 mod language_servers;
 
 use zed_extension_api::{
-    self as zed, CodeLabel, LanguageServerId, Result, Worktree,
+    self as zed, CodeLabel, DebugAdapterBinary, DebugConfig, DebugRequest, DebugScenario,
+    DebugTaskDefinition, LanguageServerId, Result, StartDebuggingRequestArguments,
+    StartDebuggingRequestArgumentsRequest, Worktree,
     lsp::{Completion, Symbol},
-    serde_json::Value,
+    serde_json::{self, Value, json},
 };
 
 use crate::language_servers::{Dexter, ElixirLs, Expert, Lexical, NextLs};
@@ -147,6 +149,98 @@ impl zed::Extension for ElixirExtension {
             Lexical::LANGUAGE_SERVER_ID => self.lexical.as_ref()?.label_for_symbol(symbol),
             _ => None,
         }
+    }
+
+    fn get_dap_binary(
+        &mut self,
+        _adapter_name: String,
+        config: DebugTaskDefinition,
+        user_provided_debug_adapter_path: Option<String>,
+        worktree: &Worktree,
+    ) -> Result<DebugAdapterBinary, String> {
+        let binary_path = if let Some(path) = user_provided_debug_adapter_path {
+            path
+        } else {
+            self.elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .get_debug_adapter_path(worktree)?
+        };
+
+        let request = serde_json::from_str::<Value>(&config.config)
+            .ok()
+            .and_then(|v| {
+                v.get("request")
+                    .and_then(|r| r.as_str())
+                    .map(str::to_string)
+            })
+            .unwrap_or_else(|| "launch".to_string());
+
+        let request_kind = if request == "attach" {
+            StartDebuggingRequestArgumentsRequest::Attach
+        } else {
+            StartDebuggingRequestArgumentsRequest::Launch
+        };
+
+        Ok(DebugAdapterBinary {
+            command: Some(binary_path),
+            arguments: vec![],
+            envs: vec![],
+            cwd: None,
+            connection: None,
+            request_args: StartDebuggingRequestArguments {
+                configuration: config.config,
+                request: request_kind,
+            },
+        })
+    }
+
+    fn dap_request_kind(
+        &mut self,
+        _adapter_name: String,
+        config: Value,
+    ) -> Result<StartDebuggingRequestArgumentsRequest, String> {
+        match config.get("request").and_then(|v| v.as_str()) {
+            Some("attach") => Ok(StartDebuggingRequestArgumentsRequest::Attach),
+            _ => Ok(StartDebuggingRequestArgumentsRequest::Launch),
+        }
+    }
+
+    fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario, String> {
+        let adapter_config = match config.request {
+            DebugRequest::Launch(launch) => {
+                let env: serde_json::Map<String, Value> = launch
+                    .envs
+                    .into_iter()
+                    .map(|(k, v)| (k, Value::String(v)))
+                    .collect();
+
+                let mut cfg = json!({
+                    "type": "mix_task",
+                    "request": "launch",
+                    "task": launch.program,
+                    "taskArgs": launch.args,
+                    "env": env,
+                });
+
+                if let Some(cwd) = launch.cwd {
+                    cfg["projectDir"] = Value::String(cwd);
+                }
+
+                cfg
+            }
+            DebugRequest::Attach(_) => json!({
+                "type": "mix_task",
+                "request": "attach",
+            }),
+        };
+
+        Ok(DebugScenario {
+            label: config.label,
+            adapter: config.adapter,
+            build: None,
+            config: adapter_config.to_string(),
+            tcp_connection: None,
+        })
     }
 }
 
