@@ -74,7 +74,7 @@ languages = [
 "EEx" = "eex"
 "HEEx" = "heex"
 
-[debug_adapters.elixir-ls]
+[debug_adapters.ElixirLS]
 name = "ElixirLS"
 schema_path = "schemas/elixir_debug_adapter.json"
 

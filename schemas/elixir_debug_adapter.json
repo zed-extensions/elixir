@@ -3,46 +3,44 @@
   "title": "ElixirLS Debug Adapter Configuration",
   "type": "object",
   "properties": {
-    "type": {
-      "type": "string",
-      "const": "mix_task",
-      "description": "Must be 'mix_task' for ElixirLS"
-    },
     "request": {
       "type": "string",
       "enum": ["launch", "attach"],
-      "description": "Whether to launch a new process or attach to an existing one"
-    },
-    "name": {
-      "type": "string",
-      "description": "Display name for this debug configuration"
+      "description": "Whether to launch a new process or attach to an existing one",
+      "default": "launch"
     },
     "task": {
       "type": "string",
-      "description": "Mix task to run (e.g. 'test', 'phx.server', 'run')"
+      "examples": ["run", "test", "phx.server"],
+      "description": "Mix task to invoke (e.g. `run`, `test`, `phx.server`)"
     },
     "taskArgs": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Arguments passed to the Mix task"
+      "description": "Arguments passed to the Mix task",
+      "default": []
     },
     "projectDir": {
       "type": "string",
-      "description": "Absolute path to the directory containing mix.exs"
+      "description": "Absolute path to the directory containing mix.exs",
+      "default": "$ZED_WORKTREE_ROOT"
     },
     "startApps": {
       "type": "boolean",
-      "description": "Run 'mix app.start' before the debugger (default: false)"
+      "description": "Run `mix app.start` before the debugger (default: false)"
     },
     "requireFiles": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Extra .exs files to require and interpret before debugging"
+      "examples": [["test/**/test_helper.exs", "test/**/*_test.exs"]],
+      "default": [],
+      "description": "Extra `.exs` files to require and interpret before debugging"
     },
     "excludeModules": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Modules that should NOT be interpreted (e.g. NIFs)"
+      "description": "Modules that should NOT be interpreted (e.g. NIFs)",
+      "default": []
     },
     "debugAutoInterpretAllModules": {
       "type": "boolean",
@@ -51,7 +49,8 @@
     "debugInterpretModulesPatterns": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Glob patterns for modules to interpret"
+      "description": "Glob patterns for modules to interpret",
+      "default": []
     },
     "exitAfterTaskReturns": {
       "type": "boolean",
@@ -60,12 +59,13 @@
     "env": {
       "type": "object",
       "additionalProperties": { "type": "string" },
-      "description": "Environment variables to set for the debugged process"
+      "description": "Environment variables to set for the debugged process",
+      "default": {}
     },
     "stackTraceMode": {
       "type": "string",
       "enum": ["all", "no_tail", "false"],
-      "description": "Argument passed to :int.stack_trace/1"
+      "description": "Argument passed to `:int.stack_trace/1` (default: no_tail)"
     },
     "noDebug": {
       "type": "boolean",
@@ -73,8 +73,8 @@
     },
     "breakOnDbg": {
       "type": "boolean",
-      "description": "Automatically break on Kernel.dbg/2 calls (default: true)"
+      "description": "Automatically break on `Kernel.dbg/2` calls (default: true)"
     }
   },
-  "required": ["type", "request"]
+  "required": ["request", "task", "projectDir"]
 }
