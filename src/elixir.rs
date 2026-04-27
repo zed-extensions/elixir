@@ -1,11 +1,13 @@
 mod language_servers;
 
+use std::str::FromStr;
+
 use zed_extension_api::{
     self as zed, CodeLabel, DebugAdapterBinary, DebugConfig, DebugRequest, DebugScenario,
     DebugTaskDefinition, LanguageServerId, Result, StartDebuggingRequestArguments,
     StartDebuggingRequestArgumentsRequest, Worktree,
     lsp::{Completion, Symbol},
-    serde_json::{self, Value, json},
+    serde_json::{Map, Value, json},
 };
 
 use crate::language_servers::{Dexter, ElixirLs, Expert, Lexical, NextLs};
@@ -166,21 +168,6 @@ impl zed::Extension for ElixirExtension {
                 .get_debug_adapter_path(worktree)?
         };
 
-        let request = serde_json::from_str::<Value>(&config.config)
-            .ok()
-            .and_then(|v| {
-                v.get("request")
-                    .and_then(|r| r.as_str())
-                    .map(str::to_string)
-            })
-            .unwrap_or_else(|| "launch".to_string());
-
-        let request_kind = if request == "attach" {
-            StartDebuggingRequestArgumentsRequest::Attach
-        } else {
-            StartDebuggingRequestArgumentsRequest::Launch
-        };
-
         Ok(DebugAdapterBinary {
             command: Some(binary_path),
             arguments: vec![],
@@ -188,8 +175,14 @@ impl zed::Extension for ElixirExtension {
             cwd: None,
             connection: None,
             request_args: StartDebuggingRequestArguments {
-                configuration: config.config,
-                request: request_kind,
+                configuration: config.config.clone(),
+                request: self
+                    .dap_request_kind(
+                        _adapter_name,
+                        Value::from_str(&config.config)
+                            .map_err(|err| format!("Invalid JSON configuration: {err}"))?,
+                    )
+                    .map_err(|err| format!("Failed to determine debug request kind: {err}"))?,
             },
         })
     }
@@ -201,18 +194,25 @@ impl zed::Extension for ElixirExtension {
     ) -> Result<StartDebuggingRequestArgumentsRequest, String> {
         match config.get("request").and_then(|v| v.as_str()) {
             Some("attach") => Ok(StartDebuggingRequestArgumentsRequest::Attach),
-            _ => Ok(StartDebuggingRequestArgumentsRequest::Launch),
+            Some("launch") => Ok(StartDebuggingRequestArgumentsRequest::Launch),
+            Some(value) => Err(format!(
+                "Unexpected value for `request` key in ElixirLS debug adapter configuration: {value:?}"
+            )),
+            None => Err(
+                "Missing required `request` field in ElixirLS debug adapter configuration"
+                    .to_string(),
+            ),
         }
     }
 
     fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario, String> {
         let adapter_config = match config.request {
             DebugRequest::Launch(launch) => {
-                let env: serde_json::Map<String, Value> = launch
+                let env: Map<String, Value> = launch
                     .envs
                     .into_iter()
                     .map(|(k, v)| (k, Value::String(v)))
-                    .collect();
+                    .collect::<Map<_, _>>();
 
                 let mut cfg = json!({
                     "type": "mix_task",
