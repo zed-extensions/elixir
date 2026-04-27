@@ -31,104 +31,6 @@ impl ElixirLs {
         }
     }
 
-    pub fn language_server_command(
-        &mut self,
-        language_server_id: &LanguageServerId,
-        worktree: &Worktree,
-    ) -> Result<zed::Command> {
-        let elixir_ls = self.language_server_binary(language_server_id, worktree)?;
-
-        Ok(zed::Command {
-            command: elixir_ls.path,
-            args: elixir_ls.args,
-            env: Default::default(),
-        })
-    }
-
-    pub fn get_dap_binary(
-        &mut self,
-        config: DebugTaskDefinition,
-        user_provided_debug_adapter_path: Option<String>,
-        _worktree: &Worktree,
-    ) -> Result<DebugAdapterBinary> {
-        let elixir_ls = self.debug_adapter_binary(user_provided_debug_adapter_path)?;
-
-        let request = self
-            .dap_request_kind(
-                Value::from_str(&config.config)
-                    .map_err(|err| format!("Invalid JSON configuration: {err}"))?,
-            )
-            .map_err(|err| format!("Failed to determine debug request kind: {err}"))?;
-
-        Ok(DebugAdapterBinary {
-            command: Some(elixir_ls),
-            arguments: vec![],
-            envs: vec![],
-            cwd: None,
-            connection: None,
-            request_args: StartDebuggingRequestArguments {
-                configuration: config.config,
-                request: request,
-            },
-        })
-    }
-
-    fn debug_adapter_binary(
-        &mut self,
-        user_provided_debug_adapter_path: Option<String>,
-    ) -> Result<String> {
-        if let Some(binary_path) = user_provided_debug_adapter_path {
-            return Ok(binary_path);
-        }
-
-        if let Some(binary_path) = &self.cached_dap_binary_path
-            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
-        {
-            return Ok(binary_path.clone());
-        }
-
-        let (_, binary_path) = self.download_elixir_ls(None)?;
-        Ok(binary_path)
-    }
-
-    fn language_server_binary(
-        &mut self,
-        language_server_id: &LanguageServerId,
-        worktree: &Worktree,
-    ) -> Result<ElixirLsBinary> {
-        let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
-        let binary_args = config::get_binary_args(&binary_settings).unwrap_or_default();
-
-        if let Some(binary_path) = config::get_binary_path(&binary_settings) {
-            return Ok(ElixirLsBinary {
-                path: binary_path,
-                args: binary_args,
-            });
-        }
-
-        if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
-            return Ok(ElixirLsBinary {
-                path: binary_path,
-                args: binary_args,
-            });
-        }
-
-        if let Some(binary_path) = &self.cached_lsp_binary_path
-            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
-        {
-            return Ok(ElixirLsBinary {
-                path: binary_path.clone(),
-                args: binary_args,
-            });
-        }
-
-        let (binary_path, _) = self.download_elixir_ls(Some(language_server_id))?;
-        Ok(ElixirLsBinary {
-            path: binary_path,
-            args: binary_args,
-        })
-    }
-
     fn download_elixir_ls(
         &mut self,
         language_server_id: Option<&LanguageServerId>,
@@ -223,56 +125,55 @@ impl ElixirLs {
         Ok((lsp_binary_path, dap_binary_path))
     }
 
-    pub fn dap_request_kind(
+    pub fn language_server_command(
         &mut self,
-        config: Value,
-    ) -> Result<StartDebuggingRequestArgumentsRequest> {
-        match config.get("request").and_then(|v| v.as_str()) {
-            Some("attach") => Ok(StartDebuggingRequestArgumentsRequest::Attach),
-            Some("launch") => Ok(StartDebuggingRequestArgumentsRequest::Launch),
-            Some(value) => Err(format!(
-                "Unexpected value for `request` key in ElixirLS debug adapter configuration: {value:?}"
-            )),
-            None => Err(
-                "Missing required `request` field in ElixirLS debug adapter configuration"
-                    .to_string(),
-            ),
-        }
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<zed::Command> {
+        let elixir_ls = self.language_server_binary(language_server_id, worktree)?;
+
+        Ok(zed::Command {
+            command: elixir_ls.path,
+            args: elixir_ls.args,
+            env: Default::default(),
+        })
     }
 
-    pub fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario> {
-        let adapter_config = match config.request {
-            DebugRequest::Launch(launch) => {
-                let env = launch
-                    .envs
-                    .into_iter()
-                    .map(|(k, v)| (k, Value::String(v)))
-                    .collect::<Map<_, _>>();
+    fn language_server_binary(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<ElixirLsBinary> {
+        let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
+        let binary_args = config::get_binary_args(&binary_settings).unwrap_or_default();
 
-                let mut cfg = json!({
-                    "request": "launch",
-                    "task": launch.program,
-                    "taskArgs": launch.args,
-                    "env": env,
-                });
+        if let Some(binary_path) = config::get_binary_path(&binary_settings) {
+            return Ok(ElixirLsBinary {
+                path: binary_path,
+                args: binary_args,
+            });
+        }
 
-                if let Some(cwd) = launch.cwd {
-                    cfg["projectDir"] = Value::String(cwd);
-                }
+        if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
+            return Ok(ElixirLsBinary {
+                path: binary_path,
+                args: binary_args,
+            });
+        }
 
-                cfg
-            }
-            DebugRequest::Attach(_) => json!({
-                "request": "attach",
-            }),
-        };
+        if let Some(binary_path) = &self.cached_lsp_binary_path
+            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
+        {
+            return Ok(ElixirLsBinary {
+                path: binary_path.clone(),
+                args: binary_args,
+            });
+        }
 
-        Ok(DebugScenario {
-            label: config.label,
-            adapter: config.adapter,
-            build: None,
-            config: adapter_config.to_string(),
-            tcp_connection: None,
+        let (binary_path, _) = self.download_elixir_ls(Some(language_server_id))?;
+        Ok(ElixirLsBinary {
+            path: binary_path,
+            args: binary_args,
         })
     }
 
@@ -415,6 +316,105 @@ impl ElixirLs {
             spans: vec![CodeLabelSpan::code_range(display_range)],
             filter_range: filter_range.into(),
             code,
+        })
+    }
+
+    pub fn get_dap_binary(
+        &mut self,
+        config: DebugTaskDefinition,
+        user_provided_debug_adapter_path: Option<String>,
+        _worktree: &Worktree,
+    ) -> Result<DebugAdapterBinary> {
+        let elixir_ls = self.debug_adapter_binary(user_provided_debug_adapter_path)?;
+
+        let request = self
+            .dap_request_kind(
+                Value::from_str(&config.config)
+                    .map_err(|err| format!("Invalid JSON configuration: {err}"))?,
+            )
+            .map_err(|err| format!("Failed to determine debug request kind: {err}"))?;
+
+        Ok(DebugAdapterBinary {
+            command: Some(elixir_ls),
+            arguments: vec![],
+            envs: vec![],
+            cwd: None,
+            connection: None,
+            request_args: StartDebuggingRequestArguments {
+                configuration: config.config,
+                request: request,
+            },
+        })
+    }
+
+    fn debug_adapter_binary(
+        &mut self,
+        user_provided_debug_adapter_path: Option<String>,
+    ) -> Result<String> {
+        if let Some(binary_path) = user_provided_debug_adapter_path {
+            return Ok(binary_path);
+        }
+
+        if let Some(binary_path) = &self.cached_dap_binary_path
+            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
+        {
+            return Ok(binary_path.clone());
+        }
+
+        let (_, binary_path) = self.download_elixir_ls(None)?;
+        Ok(binary_path)
+    }
+
+    pub fn dap_request_kind(
+        &mut self,
+        config: Value,
+    ) -> Result<StartDebuggingRequestArgumentsRequest> {
+        match config.get("request").and_then(|v| v.as_str()) {
+            Some("attach") => Ok(StartDebuggingRequestArgumentsRequest::Attach),
+            Some("launch") => Ok(StartDebuggingRequestArgumentsRequest::Launch),
+            Some(value) => Err(format!(
+                "Unexpected value for `request` key in ElixirLS debug adapter configuration: {value:?}"
+            )),
+            None => Err(
+                "Missing required `request` field in ElixirLS debug adapter configuration"
+                    .to_string(),
+            ),
+        }
+    }
+
+    pub fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario> {
+        let adapter_config = match config.request {
+            DebugRequest::Launch(launch) => {
+                let env = launch
+                    .envs
+                    .into_iter()
+                    .map(|(k, v)| (k, Value::String(v)))
+                    .collect::<Map<_, _>>();
+
+                let mut cfg = json!({
+                    "request": "launch",
+                    "task": launch.program,
+                    "taskArgs": launch.args,
+                    "env": env,
+                });
+
+                if let Some(cwd) = launch.cwd {
+                    cfg["projectDir"] = Value::String(cwd);
+                }
+
+                cfg
+            }
+            DebugRequest::Attach(_) => json!({
+                "request": "attach",
+            }),
+        };
+
+        Ok(DebugScenario {
+            label: config.label,
+            adapter: config.adapter,
+            build: None,
+            config: adapter_config.to_string(),
+            tcp_connection: None,
         })
     }
 }
