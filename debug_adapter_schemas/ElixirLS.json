@@ -6,8 +6,8 @@
     "request": {
       "type": "string",
       "enum": ["launch", "attach"],
-      "description": "Whether to launch a new process or attach to an existing one",
-      "default": "launch"
+      "default": "launch",
+      "description": "Whether to launch a new process or attach to an existing one"
     },
     "task": {
       "type": "string",
@@ -17,13 +17,13 @@
     "taskArgs": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Arguments passed to the Mix task",
-      "default": []
+      "default": [],
+      "description": "Arguments passed to the Mix task"
     },
     "projectDir": {
       "type": "string",
-      "description": "Absolute path to the directory containing mix.exs",
-      "default": "$ZED_WORKTREE_ROOT"
+      "default": "$ZED_WORKTREE_ROOT",
+      "description": "Absolute path to the directory containing `mix.exs`"
     },
     "startApps": {
       "type": "boolean",
@@ -32,15 +32,14 @@
     "requireFiles": {
       "type": "array",
       "items": { "type": "string" },
-      "examples": [["test/**/test_helper.exs", "test/**/*_test.exs"]],
-      "default": [],
+      "default": ["test/**/test_helper.exs", "test/**/*_test.exs"],
       "description": "Extra `.exs` files to require and interpret before debugging"
     },
     "excludeModules": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Modules that should NOT be interpreted (e.g. NIFs)",
-      "default": []
+      "default": [],
+      "description": "Modules that should NOT be interpreted (e.g. NIFs)"
     },
     "debugAutoInterpretAllModules": {
       "type": "boolean",
@@ -49,8 +48,8 @@
     "debugInterpretModulesPatterns": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Glob patterns for modules to interpret",
-      "default": []
+      "default": [],
+      "description": "Glob patterns for modules to interpret"
     },
     "exitAfterTaskReturns": {
       "type": "boolean",
@@ -59,8 +58,8 @@
     "env": {
       "type": "object",
       "additionalProperties": { "type": "string" },
-      "description": "Environment variables to set for the debugged process",
-      "default": {}
+      "default": {},
+      "description": "Environment variables to set for the debugged process"
     },
     "stackTraceMode": {
       "type": "string",
