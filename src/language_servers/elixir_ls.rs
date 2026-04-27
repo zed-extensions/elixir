@@ -14,7 +14,8 @@ struct ElixirLsBinary {
 }
 
 pub struct ElixirLs {
-    cached_binary_path: Option<String>,
+    cached_lsp_binary_path: Option<String>,
+    cached_dap_binary_path: Option<String>,
 }
 
 impl ElixirLs {
@@ -22,7 +23,8 @@ impl ElixirLs {
 
     pub fn new() -> Self {
         Self {
-            cached_binary_path: None,
+            cached_lsp_binary_path: None,
+            cached_dap_binary_path: None,
         }
     }
 
@@ -31,17 +33,24 @@ impl ElixirLs {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<zed::Command> {
-        let binary = self.language_server_binary(language_server_id, worktree)?;
+        let elixir_ls = self.language_server_binary(language_server_id, worktree)?;
+
         Ok(zed::Command {
-            command: binary.path,
-            args: binary.args,
+            command: elixir_ls.path,
+            args: elixir_ls.args,
             env: Default::default(),
         })
     }
 
-    pub fn get_debug_adapter_path(&mut self, worktree: &Worktree) -> Result<String> {
-        let (_, debug_adapter_path) = self.download_elixir_ls(None, worktree)?;
-        Ok(debug_adapter_path)
+    pub fn get_debug_adapter_path(&mut self, _worktree: &Worktree) -> Result<String> {
+        if let Some(binary_path) = &self.cached_dap_binary_path
+            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
+        {
+            return Ok(binary_path.clone());
+        }
+
+        let (_, binary_path) = self.download_elixir_ls(None)?;
+        Ok(binary_path)
     }
 
     fn language_server_binary(
@@ -50,60 +59,55 @@ impl ElixirLs {
         worktree: &Worktree,
     ) -> Result<ElixirLsBinary> {
         let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
-        let args = config::get_binary_args(&binary_settings).unwrap_or_default();
-        let (language_server_path, _) =
-            self.download_elixir_ls(Some(language_server_id), worktree)?;
+        let binary_args = config::get_binary_args(&binary_settings).unwrap_or_default();
+
+        if let Some(binary_path) = config::get_binary_path(&binary_settings) {
+            return Ok(ElixirLsBinary {
+                path: binary_path,
+                args: binary_args,
+            });
+        }
+
+        if let Some(binary_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
+            return Ok(ElixirLsBinary {
+                path: binary_path,
+                args: binary_args,
+            });
+        }
+
+        if let Some(binary_path) = &self.cached_lsp_binary_path
+            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
+        {
+            return Ok(ElixirLsBinary {
+                path: binary_path.clone(),
+                args: binary_args,
+            });
+        }
+
+        let (binary_path, _) = self.download_elixir_ls(Some(language_server_id))?;
         Ok(ElixirLsBinary {
-            path: language_server_path,
-            args,
+            path: binary_path,
+            args: binary_args,
         })
     }
 
     fn download_elixir_ls(
         &mut self,
         language_server_id: Option<&LanguageServerId>,
-        worktree: &Worktree,
     ) -> Result<(String, String)> {
         let (platform, _arch) = zed::current_platform();
         let extension = match platform {
-            zed::Os::Mac | zed::Os::Linux => "sh",
-            zed::Os::Windows => "bat",
+            zed::Os::Mac | zed::Os::Linux => ".sh",
+            zed::Os::Windows => ".bat",
         };
 
-        let binary_name = format!("language_server.{extension}");
-        let debug_adapter_name = format!("debug_adapter.{extension}");
-        let launch_script = format!("launch.{extension}");
-        let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
+        let language_server = format!("language_server{extension}");
+        let launch_script = format!("launch{extension}");
+        let debug_adapter = format!("debug_adapter{extension}");
 
-        if let Some(language_server_path) = config::get_binary_path(&binary_settings) {
-            let debug_adapter_path = std::path::Path::new(&language_server_path)
-                .parent()
-                .map(|p| p.join(&debug_adapter_name).to_string_lossy().to_string())
-                .ok_or_else(|| "failed to determine debug adapter path".to_string())?;
-            return Ok((language_server_path, debug_adapter_path));
-        }
-
-        if let Some(language_server_path) = worktree.which(Self::LANGUAGE_SERVER_ID) {
-            let debug_adapter_path = std::path::Path::new(&language_server_path)
-                .parent()
-                .map(|p| p.join(&debug_adapter_name).to_string_lossy().to_string())
-                .ok_or_else(|| "failed to determine debug adapter path".to_string())?;
-            return Ok((language_server_path, debug_adapter_path));
-        }
-
-        if let Some(language_server_path) = &self.cached_binary_path
-            && fs::metadata(language_server_path).is_ok_and(|stat| stat.is_file())
-        {
-            let debug_adapter_path = std::path::Path::new(language_server_path)
-                .parent()
-                .map(|p| p.join(&debug_adapter_name).to_string_lossy().to_string())
-                .ok_or_else(|| "failed to determine debug adapter path".to_string())?;
-            return Ok((language_server_path.clone(), debug_adapter_path));
-        }
-
-        if let Some(id) = language_server_id {
+        if let Some(language_server_id) = language_server_id {
             zed::set_language_server_installation_status(
-                id,
+                language_server_id,
                 &zed::LanguageServerInstallationStatus::CheckingForUpdate,
             );
         }
@@ -117,19 +121,17 @@ impl ElixirLs {
         ) {
             Ok(release) => release,
             Err(_) => {
-                if let Some(ls_path) =
-                    util::find_existing_binary(Self::LANGUAGE_SERVER_ID, &binary_name)
-                {
-                    let absolute_language_server_path = fs::canonicalize(format!("./{ls_path}"))
-                        .map(|p| p.to_string_lossy().to_string())
-                        .map_err(|e| format!("failed to get absolute language server path: {e}"))?;
-                    let absolute_debug_adapter_path =
-                        std::path::Path::new(&absolute_language_server_path)
+                if let Some(lsp_binary_path) =
+                    util::find_existing_binary(Self::LANGUAGE_SERVER_ID, &language_server)
+                    && let Some(dap_binary_path) =
+                        fs::canonicalize(format!("./{}", lsp_binary_path))
+                            .map_err(|e| format!("failed to resolve debug adapter path: {e}"))?
                             .parent()
-                            .map(|p| p.join(&debug_adapter_name).to_string_lossy().to_string())
-                            .ok_or_else(|| "failed to determine debug adapter path".to_string())?;
-                    self.cached_binary_path = Some(absolute_language_server_path.clone());
-                    return Ok((absolute_language_server_path, absolute_debug_adapter_path));
+                            .map(|path| path.join(debug_adapter).to_string_lossy().to_string())
+                {
+                    self.cached_lsp_binary_path = Some(lsp_binary_path.clone());
+                    self.cached_dap_binary_path = Some(dap_binary_path.clone());
+                    return Ok((lsp_binary_path, dap_binary_path));
                 }
                 return Err("failed to download latest github release".to_string());
             }
@@ -148,14 +150,14 @@ impl ElixirLs {
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
         let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
-        let binary_path = format!("{version_dir}/{binary_name}");
-        let launch_path = format!("{version_dir}/{launch_script}");
-        let debug_path = format!("{version_dir}/{debug_adapter_name}");
+        let lsp_binary_path = format!("{}/{}", version_dir, language_server);
+        let launch_binary_path = format!("{}/{}", version_dir, launch_script);
+        let dap_binary_path = format!("{}/{}", version_dir, debug_adapter);
 
-        if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
-            if let Some(id) = language_server_id {
+        if !fs::metadata(&lsp_binary_path).is_ok_and(|stat| stat.is_file()) {
+            if let Some(language_server_id) = language_server_id {
                 zed::set_language_server_installation_status(
-                    id,
+                    language_server_id,
                     &zed::LanguageServerInstallationStatus::Downloading,
                 );
             }
@@ -167,22 +169,20 @@ impl ElixirLs {
             )
             .map_err(|e| format!("failed to download file: {e}"))?;
 
-            zed::make_file_executable(&binary_path)?;
-            zed::make_file_executable(&launch_path)?;
-            zed::make_file_executable(&debug_path)?;
+            zed::make_file_executable(&lsp_binary_path)?;
+            zed::make_file_executable(&launch_binary_path)?;
+            zed::make_file_executable(&dap_binary_path)?;
 
             util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
 
-        let absolute_language_server_path = fs::canonicalize(format!("./{binary_path}"))
-            .map(|p| p.to_string_lossy().to_string())
-            .map_err(|e| format!("failed to get absolute language server path: {e}"))?;
-        let absolute_debug_adapter_path = fs::canonicalize(format!("./{debug_path}"))
-            .map(|p| p.to_string_lossy().to_string())
-            .map_err(|e| format!("failed to get absolute debug adapter path: {e}"))?;
-
-        self.cached_binary_path = Some(absolute_language_server_path.clone());
-        Ok((absolute_language_server_path, absolute_debug_adapter_path))
+        let dap_binary_path = fs::canonicalize(format!("./{}", dap_binary_path))
+            .map_err(|e| format!("failed to resolve debug adapter path: {e}"))?
+            .to_string_lossy()
+            .to_string();
+        self.cached_lsp_binary_path = Some(lsp_binary_path.clone());
+        self.cached_dap_binary_path = Some(dap_binary_path.clone());
+        Ok((lsp_binary_path, dap_binary_path))
     }
 
     pub fn language_server_initialization_options(
