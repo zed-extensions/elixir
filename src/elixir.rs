@@ -1,13 +1,10 @@
 mod language_servers;
 
-use std::str::FromStr;
-
 use zed_extension_api::{
-    self as zed, CodeLabel, DebugAdapterBinary, DebugConfig, DebugRequest, DebugScenario,
-    DebugTaskDefinition, LanguageServerId, Result, StartDebuggingRequestArguments,
-    StartDebuggingRequestArgumentsRequest, Worktree,
+    self as zed, CodeLabel, DebugAdapterBinary, DebugConfig, DebugScenario, DebugTaskDefinition,
+    LanguageServerId, Result, StartDebuggingRequestArgumentsRequest, Worktree,
     lsp::{Completion, Symbol},
-    serde_json::{Map, Value, json},
+    serde_json::Value,
 };
 
 use crate::language_servers::{Dexter, ElixirLs, Expert, Lexical, NextLs};
@@ -155,92 +152,42 @@ impl zed::Extension for ElixirExtension {
 
     fn get_dap_binary(
         &mut self,
-        _adapter_name: String,
+        adapter_name: String,
         config: DebugTaskDefinition,
         user_provided_debug_adapter_path: Option<String>,
         worktree: &Worktree,
-    ) -> Result<DebugAdapterBinary, String> {
-        let binary_path = if let Some(path) = user_provided_debug_adapter_path {
-            path
-        } else {
-            self.elixir_ls
+    ) -> Result<DebugAdapterBinary> {
+        match adapter_name.as_str() {
+            ElixirLs::DEBUG_ADAPTER_NAME => self
+                .elixir_ls
                 .get_or_insert_with(ElixirLs::new)
-                .get_debug_adapter_path(worktree)?
-        };
-
-        Ok(DebugAdapterBinary {
-            command: Some(binary_path),
-            arguments: vec![],
-            envs: vec![],
-            cwd: None,
-            connection: None,
-            request_args: StartDebuggingRequestArguments {
-                configuration: config.config.clone(),
-                request: self
-                    .dap_request_kind(
-                        _adapter_name,
-                        Value::from_str(&config.config)
-                            .map_err(|err| format!("Invalid JSON configuration: {err}"))?,
-                    )
-                    .map_err(|err| format!("Failed to determine debug request kind: {err}"))?,
-            },
-        })
+                .get_dap_binary(config, user_provided_debug_adapter_path, worktree),
+            adapter_name => Err(format!("unknown debug adapter: {adapter_name}")),
+        }
     }
 
     fn dap_request_kind(
         &mut self,
-        _adapter_name: String,
+        adapter_name: String,
         config: Value,
-    ) -> Result<StartDebuggingRequestArgumentsRequest, String> {
-        match config.get("request").and_then(|v| v.as_str()) {
-            Some("attach") => Ok(StartDebuggingRequestArgumentsRequest::Attach),
-            Some("launch") => Ok(StartDebuggingRequestArgumentsRequest::Launch),
-            Some(value) => Err(format!(
-                "Unexpected value for `request` key in ElixirLS debug adapter configuration: {value:?}"
-            )),
-            None => Err(
-                "Missing required `request` field in ElixirLS debug adapter configuration"
-                    .to_string(),
-            ),
+    ) -> Result<StartDebuggingRequestArgumentsRequest> {
+        match adapter_name.as_str() {
+            ElixirLs::DEBUG_ADAPTER_NAME => self
+                .elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .dap_request_kind(config),
+            adapter_name => Err(format!("unknown debug adapter: {adapter_name}")),
         }
     }
 
-    fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario, String> {
-        let adapter_config = match config.request {
-            DebugRequest::Launch(launch) => {
-                let env: Map<String, Value> = launch
-                    .envs
-                    .into_iter()
-                    .map(|(k, v)| (k, Value::String(v)))
-                    .collect::<Map<_, _>>();
-
-                let mut cfg = json!({
-                    "type": "mix_task",
-                    "request": "launch",
-                    "task": launch.program,
-                    "taskArgs": launch.args,
-                    "env": env,
-                });
-
-                if let Some(cwd) = launch.cwd {
-                    cfg["projectDir"] = Value::String(cwd);
-                }
-
-                cfg
-            }
-            DebugRequest::Attach(_) => json!({
-                "type": "mix_task",
-                "request": "attach",
-            }),
-        };
-
-        Ok(DebugScenario {
-            label: config.label,
-            adapter: config.adapter,
-            build: None,
-            config: adapter_config.to_string(),
-            tcp_connection: None,
-        })
+    fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario> {
+        match config.adapter.as_str() {
+            ElixirLs::DEBUG_ADAPTER_NAME => self
+                .elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .dap_config_to_scenario(config),
+            adapter_name => Err(format!("unknown debug adapter: {adapter_name}")),
+        }
     }
 }
 

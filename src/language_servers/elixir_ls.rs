@@ -1,9 +1,11 @@
-use std::fs;
+use std::{fs, str::FromStr};
 
 use zed_extension_api::{
-    self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
+    self as zed, CodeLabel, CodeLabelSpan, DebugAdapterBinary, DebugConfig, DebugRequest,
+    DebugScenario, DebugTaskDefinition, LanguageServerId, Result, StartDebuggingRequestArguments,
+    StartDebuggingRequestArgumentsRequest, Worktree,
     lsp::{Completion, CompletionKind, Symbol, SymbolKind},
-    serde_json::{Value, json},
+    serde_json::{Map, Value, json},
 };
 
 use crate::language_servers::{config, util};
@@ -20,6 +22,7 @@ pub struct ElixirLs {
 
 impl ElixirLs {
     pub const LANGUAGE_SERVER_ID: &'static str = "elixir-ls";
+    pub const DEBUG_ADAPTER_NAME: &'static str = "ElixirLS";
 
     pub fn new() -> Self {
         Self {
@@ -42,7 +45,42 @@ impl ElixirLs {
         })
     }
 
-    pub fn get_debug_adapter_path(&mut self, _worktree: &Worktree) -> Result<String> {
+    pub fn get_dap_binary(
+        &mut self,
+        config: DebugTaskDefinition,
+        user_provided_debug_adapter_path: Option<String>,
+        _worktree: &Worktree,
+    ) -> Result<DebugAdapterBinary> {
+        let elixir_ls = self.debug_adapter_binary(user_provided_debug_adapter_path)?;
+
+        let request = self
+            .dap_request_kind(
+                Value::from_str(&config.config)
+                    .map_err(|err| format!("Invalid JSON configuration: {err}"))?,
+            )
+            .map_err(|err| format!("Failed to determine debug request kind: {err}"))?;
+
+        Ok(DebugAdapterBinary {
+            command: Some(elixir_ls),
+            arguments: vec![],
+            envs: vec![],
+            cwd: None,
+            connection: None,
+            request_args: StartDebuggingRequestArguments {
+                configuration: config.config,
+                request: request,
+            },
+        })
+    }
+
+    fn debug_adapter_binary(
+        &mut self,
+        user_provided_debug_adapter_path: Option<String>,
+    ) -> Result<String> {
+        if let Some(binary_path) = user_provided_debug_adapter_path {
+            return Ok(binary_path);
+        }
+
         if let Some(binary_path) = &self.cached_dap_binary_path
             && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
         {
@@ -183,6 +221,59 @@ impl ElixirLs {
         self.cached_lsp_binary_path = Some(lsp_binary_path.clone());
         self.cached_dap_binary_path = Some(dap_binary_path.clone());
         Ok((lsp_binary_path, dap_binary_path))
+    }
+
+    pub fn dap_request_kind(
+        &mut self,
+        config: Value,
+    ) -> Result<StartDebuggingRequestArgumentsRequest> {
+        match config.get("request").and_then(|v| v.as_str()) {
+            Some("attach") => Ok(StartDebuggingRequestArgumentsRequest::Attach),
+            Some("launch") => Ok(StartDebuggingRequestArgumentsRequest::Launch),
+            Some(value) => Err(format!(
+                "Unexpected value for `request` key in ElixirLS debug adapter configuration: {value:?}"
+            )),
+            None => Err(
+                "Missing required `request` field in ElixirLS debug adapter configuration"
+                    .to_string(),
+            ),
+        }
+    }
+
+    pub fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario> {
+        let adapter_config = match config.request {
+            DebugRequest::Launch(launch) => {
+                let env = launch
+                    .envs
+                    .into_iter()
+                    .map(|(k, v)| (k, Value::String(v)))
+                    .collect::<Map<_, _>>();
+
+                let mut cfg = json!({
+                    "request": "launch",
+                    "task": launch.program,
+                    "taskArgs": launch.args,
+                    "env": env,
+                });
+
+                if let Some(cwd) = launch.cwd {
+                    cfg["projectDir"] = Value::String(cwd);
+                }
+
+                cfg
+            }
+            DebugRequest::Attach(_) => json!({
+                "request": "attach",
+            }),
+        };
+
+        Ok(DebugScenario {
+            label: config.label,
+            adapter: config.adapter,
+            build: None,
+            config: adapter_config.to_string(),
+            tcp_connection: None,
+        })
     }
 
     pub fn language_server_initialization_options(
