@@ -252,7 +252,6 @@ impl ElixirLs {
 
                 let description = completion
                     .label_details
-                    .clone()
                     .and_then(|details| details.description)
                     .map(|description| format!(" ({description})"))
                     .unwrap_or("".to_string());
