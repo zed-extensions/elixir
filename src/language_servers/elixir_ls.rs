@@ -1,9 +1,11 @@
-use std::fs;
+use std::{fs, str::FromStr};
 
 use zed_extension_api::{
-    self as zed, CodeLabel, CodeLabelSpan, LanguageServerId, Result, Worktree,
+    self as zed, CodeLabel, CodeLabelSpan, DebugAdapterBinary, DebugConfig, DebugRequest,
+    DebugScenario, DebugTaskDefinition, LanguageServerId, Result, StartDebuggingRequestArguments,
+    StartDebuggingRequestArgumentsRequest, Worktree,
     lsp::{Completion, CompletionKind, Symbol, SymbolKind},
-    serde_json::{Value, json},
+    serde_json::{Map, Value, json},
 };
 
 use crate::language_servers::{config, util};
@@ -14,16 +16,113 @@ struct ElixirLsBinary {
 }
 
 pub struct ElixirLs {
-    cached_binary_path: Option<String>,
+    cached_lsp_binary_path: Option<String>,
+    cached_dap_binary_path: Option<String>,
 }
 
 impl ElixirLs {
     pub const LANGUAGE_SERVER_ID: &'static str = "elixir-ls";
+    pub const DEBUG_ADAPTER_NAME: &'static str = "ElixirLS";
 
     pub fn new() -> Self {
         Self {
-            cached_binary_path: None,
+            cached_lsp_binary_path: None,
+            cached_dap_binary_path: None,
         }
+    }
+
+    fn download_elixir_ls(
+        &mut self,
+        language_server_id: Option<&LanguageServerId>,
+    ) -> Result<(String, String)> {
+        let (platform, _arch) = zed::current_platform();
+        let extension = match platform {
+            zed::Os::Mac | zed::Os::Linux => ".sh",
+            zed::Os::Windows => ".bat",
+        };
+
+        let language_server = format!("language_server{extension}");
+        let launch_script = format!("launch{extension}");
+        let debug_adapter = format!("debug_adapter{extension}");
+
+        if let Some(language_server_id) = language_server_id {
+            zed::set_language_server_installation_status(
+                language_server_id,
+                &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+            );
+        }
+
+        let release = match zed::latest_github_release(
+            "elixir-lsp/elixir-ls",
+            zed::GithubReleaseOptions {
+                require_assets: true,
+                pre_release: false,
+            },
+        ) {
+            Ok(release) => release,
+            Err(_) => {
+                if let Some(lsp_binary_path) =
+                    util::find_existing_binary(Self::LANGUAGE_SERVER_ID, &language_server)
+                    && let Some(dap_binary_path) =
+                        fs::canonicalize(format!("./{}", lsp_binary_path))
+                            .map_err(|e| format!("failed to resolve debug adapter path: {e}"))?
+                            .parent()
+                            .map(|path| path.join(debug_adapter).to_string_lossy().to_string())
+                {
+                    self.cached_lsp_binary_path = Some(lsp_binary_path.clone());
+                    self.cached_dap_binary_path = Some(dap_binary_path.clone());
+                    return Ok((lsp_binary_path, dap_binary_path));
+                }
+                return Err("failed to download latest github release".to_string());
+            }
+        };
+
+        let asset_name = format!(
+            "{}-{version}.zip",
+            Self::LANGUAGE_SERVER_ID,
+            version = release.version,
+        );
+
+        let asset = release
+            .assets
+            .iter()
+            .find(|asset| asset.name == asset_name)
+            .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
+
+        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
+        let lsp_binary_path = format!("{}/{}", version_dir, language_server);
+        let launch_binary_path = format!("{}/{}", version_dir, launch_script);
+        let dap_binary_path = format!("{}/{}", version_dir, debug_adapter);
+
+        if !fs::metadata(&lsp_binary_path).is_ok_and(|stat| stat.is_file()) {
+            if let Some(language_server_id) = language_server_id {
+                zed::set_language_server_installation_status(
+                    language_server_id,
+                    &zed::LanguageServerInstallationStatus::Downloading,
+                );
+            }
+
+            zed::download_file(
+                &asset.download_url,
+                &version_dir,
+                zed::DownloadedFileType::Zip,
+            )
+            .map_err(|e| format!("failed to download file: {e}"))?;
+
+            zed::make_file_executable(&lsp_binary_path)?;
+            zed::make_file_executable(&launch_binary_path)?;
+            zed::make_file_executable(&dap_binary_path)?;
+
+            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
+        }
+
+        let dap_binary_path = fs::canonicalize(format!("./{}", dap_binary_path))
+            .map_err(|e| format!("failed to resolve debug adapter path: {e}"))?
+            .to_string_lossy()
+            .to_string();
+        self.cached_lsp_binary_path = Some(lsp_binary_path.clone());
+        self.cached_dap_binary_path = Some(dap_binary_path.clone());
+        Ok((lsp_binary_path, dap_binary_path))
     }
 
     pub fn language_server_command(
@@ -45,17 +144,8 @@ impl ElixirLs {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<ElixirLsBinary> {
-        let (platform, _arch) = zed::current_platform();
-        let extension = match platform {
-            zed::Os::Mac | zed::Os::Linux => "sh",
-            zed::Os::Windows => "bat",
-        };
-
-        let binary_name = format!("language_server.{extension}");
         let binary_settings = config::get_binary_settings(Self::LANGUAGE_SERVER_ID, worktree);
         let binary_args = config::get_binary_args(&binary_settings).unwrap_or_default();
-        let launch_script = format!("launch.{extension}");
-        let debug_adapter = format!("debug_adapter.{extension}");
 
         if let Some(binary_path) = config::get_binary_path(&binary_settings) {
             return Ok(ElixirLsBinary {
@@ -71,7 +161,7 @@ impl ElixirLs {
             });
         }
 
-        if let Some(binary_path) = &self.cached_binary_path
+        if let Some(binary_path) = &self.cached_lsp_binary_path
             && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
         {
             return Ok(ElixirLsBinary {
@@ -80,71 +170,7 @@ impl ElixirLs {
             });
         }
 
-        zed::set_language_server_installation_status(
-            language_server_id,
-            &zed::LanguageServerInstallationStatus::CheckingForUpdate,
-        );
-
-        let release = match zed::latest_github_release(
-            "elixir-lsp/elixir-ls",
-            zed::GithubReleaseOptions {
-                require_assets: true,
-                pre_release: false,
-            },
-        ) {
-            Ok(release) => release,
-            Err(_) => {
-                if let Some(binary_path) =
-                    util::find_existing_binary(Self::LANGUAGE_SERVER_ID, &binary_name)
-                {
-                    self.cached_binary_path = Some(binary_path.clone());
-                    return Ok(ElixirLsBinary {
-                        path: binary_path,
-                        args: binary_args,
-                    });
-                }
-                return Err("failed to download latest github release".to_string());
-            }
-        };
-
-        let asset_name = format!(
-            "{}-{version}.zip",
-            Self::LANGUAGE_SERVER_ID,
-            version = release.version,
-        );
-
-        let asset = release
-            .assets
-            .iter()
-            .find(|asset| asset.name == asset_name)
-            .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
-
-        let version_dir = format!("{}-{}", Self::LANGUAGE_SERVER_ID, release.version);
-        let binary_path = format!("{}/{}", version_dir, binary_name);
-        let launch_path = format!("{}/{}", version_dir, launch_script);
-        let debug_path = format!("{}/{}", version_dir, debug_adapter);
-
-        if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
-            zed::set_language_server_installation_status(
-                language_server_id,
-                &zed::LanguageServerInstallationStatus::Downloading,
-            );
-
-            zed::download_file(
-                &asset.download_url,
-                &version_dir,
-                zed::DownloadedFileType::Zip,
-            )
-            .map_err(|e| format!("failed to download file: {e}"))?;
-
-            zed::make_file_executable(&binary_path)?;
-            zed::make_file_executable(&launch_path)?;
-            zed::make_file_executable(&debug_path)?;
-
-            util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
-        }
-
-        self.cached_binary_path = Some(binary_path.clone());
+        let (binary_path, _) = self.download_elixir_ls(Some(language_server_id))?;
         Ok(ElixirLsBinary {
             path: binary_path,
             args: binary_args,
@@ -290,6 +316,105 @@ impl ElixirLs {
             spans: vec![CodeLabelSpan::code_range(display_range)],
             filter_range: filter_range.into(),
             code,
+        })
+    }
+
+    pub fn get_dap_binary(
+        &mut self,
+        config: DebugTaskDefinition,
+        user_provided_debug_adapter_path: Option<String>,
+        _worktree: &Worktree,
+    ) -> Result<DebugAdapterBinary> {
+        let elixir_ls = self.debug_adapter_binary(user_provided_debug_adapter_path)?;
+
+        let request = self
+            .dap_request_kind(
+                Value::from_str(&config.config)
+                    .map_err(|err| format!("Invalid JSON configuration: {err}"))?,
+            )
+            .map_err(|err| format!("Failed to determine debug request kind: {err}"))?;
+
+        Ok(DebugAdapterBinary {
+            command: Some(elixir_ls),
+            arguments: vec![],
+            envs: vec![],
+            cwd: None,
+            connection: None,
+            request_args: StartDebuggingRequestArguments {
+                configuration: config.config,
+                request,
+            },
+        })
+    }
+
+    fn debug_adapter_binary(
+        &mut self,
+        user_provided_debug_adapter_path: Option<String>,
+    ) -> Result<String> {
+        if let Some(binary_path) = user_provided_debug_adapter_path {
+            return Ok(binary_path);
+        }
+
+        if let Some(binary_path) = &self.cached_dap_binary_path
+            && fs::metadata(binary_path).is_ok_and(|stat| stat.is_file())
+        {
+            return Ok(binary_path.clone());
+        }
+
+        let (_, binary_path) = self.download_elixir_ls(None)?;
+        Ok(binary_path)
+    }
+
+    pub fn dap_request_kind(
+        &mut self,
+        config: Value,
+    ) -> Result<StartDebuggingRequestArgumentsRequest> {
+        match config.get("request").and_then(|v| v.as_str()) {
+            Some("attach") => Ok(StartDebuggingRequestArgumentsRequest::Attach),
+            Some("launch") => Ok(StartDebuggingRequestArgumentsRequest::Launch),
+            Some(value) => Err(format!(
+                "Unexpected value for `request` key in ElixirLS debug adapter configuration: {value:?}"
+            )),
+            None => Err(
+                "Missing required `request` field in ElixirLS debug adapter configuration"
+                    .to_string(),
+            ),
+        }
+    }
+
+    pub fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario> {
+        let adapter_config = match config.request {
+            DebugRequest::Launch(launch) => {
+                let env = launch
+                    .envs
+                    .into_iter()
+                    .map(|(k, v)| (k, Value::String(v)))
+                    .collect::<Map<_, _>>();
+
+                let mut cfg = json!({
+                    "request": "launch",
+                    "task": launch.program,
+                    "taskArgs": launch.args,
+                    "env": env,
+                });
+
+                if let Some(cwd) = launch.cwd {
+                    cfg["projectDir"] = Value::String(cwd);
+                }
+
+                cfg
+            }
+            DebugRequest::Attach(_) => json!({
+                "request": "attach",
+            }),
+        };
+
+        Ok(DebugScenario {
+            label: config.label,
+            adapter: config.adapter,
+            build: None,
+            config: adapter_config.to_string(),
+            tcp_connection: None,
         })
     }
 }

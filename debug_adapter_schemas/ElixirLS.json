@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ElixirLS Debug Adapter Configuration",
+  "type": "object",
+  "properties": {
+    "request": {
+      "type": "string",
+      "enum": ["launch", "attach"],
+      "default": "launch",
+      "description": "Whether to launch a new process or attach to an existing one"
+    },
+    "task": {
+      "type": "string",
+      "examples": ["run", "test", "phx.server"],
+      "description": "Mix task to invoke (e.g. `run`, `test`, `phx.server`)"
+    },
+    "taskArgs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Arguments passed to the Mix task"
+    },
+    "projectDir": {
+      "type": "string",
+      "default": "$ZED_WORKTREE_ROOT",
+      "description": "Absolute path to the directory containing `mix.exs`"
+    },
+    "startApps": {
+      "type": "boolean",
+      "description": "Run `mix app.start` before the debugger (default: false)"
+    },
+    "requireFiles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["test/**/test_helper.exs", "test/**/*_test.exs"],
+      "description": "Extra `.exs` files to require and interpret before debugging"
+    },
+    "excludeModules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Modules that should NOT be interpreted (e.g. NIFs)"
+    },
+    "debugAutoInterpretAllModules": {
+      "type": "boolean",
+      "description": "Automatically interpret all loaded modules (default: true)"
+    },
+    "debugInterpretModulesPatterns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Glob patterns for modules to interpret"
+    },
+    "exitAfterTaskReturns": {
+      "type": "boolean",
+      "description": "End the debug session when the task returns (default: true)"
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "default": {},
+      "description": "Environment variables to set for the debugged process"
+    },
+    "stackTraceMode": {
+      "type": "string",
+      "enum": ["all", "no_tail", "false"],
+      "description": "Argument passed to `:int.stack_trace/1` (default: no_tail)"
+    },
+    "noDebug": {
+      "type": "boolean",
+      "description": "Run the Mix task without debugging (default: false)"
+    },
+    "breakOnDbg": {
+      "type": "boolean",
+      "description": "Automatically break on `Kernel.dbg/2` calls (default: true)"
+    }
+  },
+  "required": ["request", "task", "projectDir"]
+}

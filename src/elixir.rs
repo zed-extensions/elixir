@@ -1,7 +1,8 @@
 mod language_servers;
 
 use zed_extension_api::{
-    self as zed, CodeLabel, LanguageServerId, Result, Worktree,
+    self as zed, CodeLabel, DebugAdapterBinary, DebugConfig, DebugScenario, DebugTaskDefinition,
+    LanguageServerId, Result, StartDebuggingRequestArgumentsRequest, Worktree,
     lsp::{Completion, Symbol},
     serde_json::Value,
 };
@@ -146,6 +147,46 @@ impl zed::Extension for ElixirExtension {
             NextLs::LANGUAGE_SERVER_ID => self.next_ls.as_ref()?.label_for_symbol(symbol),
             Lexical::LANGUAGE_SERVER_ID => self.lexical.as_ref()?.label_for_symbol(symbol),
             _ => None,
+        }
+    }
+
+    fn get_dap_binary(
+        &mut self,
+        adapter_name: String,
+        config: DebugTaskDefinition,
+        user_provided_debug_adapter_path: Option<String>,
+        worktree: &Worktree,
+    ) -> Result<DebugAdapterBinary> {
+        match adapter_name.as_str() {
+            ElixirLs::DEBUG_ADAPTER_NAME => self
+                .elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .get_dap_binary(config, user_provided_debug_adapter_path, worktree),
+            adapter_name => Err(format!("unknown debug adapter: {adapter_name}")),
+        }
+    }
+
+    fn dap_request_kind(
+        &mut self,
+        adapter_name: String,
+        config: Value,
+    ) -> Result<StartDebuggingRequestArgumentsRequest> {
+        match adapter_name.as_str() {
+            ElixirLs::DEBUG_ADAPTER_NAME => self
+                .elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .dap_request_kind(config),
+            adapter_name => Err(format!("unknown debug adapter: {adapter_name}")),
+        }
+    }
+
+    fn dap_config_to_scenario(&mut self, config: DebugConfig) -> Result<DebugScenario> {
+        match config.adapter.as_str() {
+            ElixirLs::DEBUG_ADAPTER_NAME => self
+                .elixir_ls
+                .get_or_insert_with(ElixirLs::new)
+                .dap_config_to_scenario(config),
+            adapter_name => Err(format!("unknown debug adapter: {adapter_name}")),
         }
     }
 }
