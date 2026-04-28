@@ -342,7 +342,7 @@ impl ElixirLs {
             connection: None,
             request_args: StartDebuggingRequestArguments {
                 configuration: config.config,
-                request: request,
+                request,
             },
         })
     }
