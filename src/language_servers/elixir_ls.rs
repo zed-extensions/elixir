@@ -1,4 +1,4 @@
-use std::{fs, str::FromStr};
+use std::{env, fs, str::FromStr};
 
 use zed_extension_api::{
     self as zed, CodeLabel, CodeLabelSpan, DebugAdapterBinary, DebugConfig, DebugRequest,
@@ -63,11 +63,11 @@ impl ElixirLs {
             Err(_) => {
                 if let Some(lsp_binary_path) =
                     util::find_existing_binary(Self::LANGUAGE_SERVER_ID, &language_server)
-                    && let Some(dap_binary_path) =
-                        fs::canonicalize(format!("./{}", lsp_binary_path))
-                            .map_err(|e| format!("failed to resolve debug adapter path: {e}"))?
-                            .parent()
-                            .map(|path| path.join(debug_adapter).to_string_lossy().to_string())
+                    && let Some(dap_binary_path) = env::current_dir()
+                        .map_err(|e| format!("failed to resolve debug adapter path: {e}"))?
+                        .join(lsp_binary_path.clone())
+                        .parent()
+                        .map(|path| path.join(debug_adapter).to_string_lossy().to_string())
                 {
                     self.cached_lsp_binary_path = Some(lsp_binary_path.clone());
                     self.cached_dap_binary_path = Some(dap_binary_path.clone());
@@ -116,8 +116,9 @@ impl ElixirLs {
             util::remove_outdated_versions(Self::LANGUAGE_SERVER_ID, &version_dir)?;
         }
 
-        let dap_binary_path = fs::canonicalize(format!("./{}", dap_binary_path))
+        let dap_binary_path = env::current_dir()
             .map_err(|e| format!("failed to resolve debug adapter path: {e}"))?
+            .join(dap_binary_path)
             .to_string_lossy()
             .to_string();
         self.cached_lsp_binary_path = Some(lsp_binary_path.clone());
