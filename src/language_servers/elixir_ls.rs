@@ -23,6 +23,7 @@ pub struct ElixirLs {
 impl ElixirLs {
     pub const LANGUAGE_SERVER_ID: &'static str = "elixir-ls";
     pub const DEBUG_ADAPTER_NAME: &'static str = "ElixirLS";
+    const DEBUG_ADAPTER_BINARY_NAME: &'static str = "elixir-debug-adapter";
 
     pub fn new() -> Self {
         Self {
@@ -323,9 +324,9 @@ impl ElixirLs {
         &mut self,
         config: DebugTaskDefinition,
         user_provided_debug_adapter_path: Option<String>,
-        _worktree: &Worktree,
+        worktree: &Worktree,
     ) -> Result<DebugAdapterBinary> {
-        let elixir_ls = self.debug_adapter_binary(user_provided_debug_adapter_path)?;
+        let elixir_ls = self.debug_adapter_binary(user_provided_debug_adapter_path, worktree)?;
 
         let request = self
             .dap_request_kind(
@@ -350,8 +351,13 @@ impl ElixirLs {
     fn debug_adapter_binary(
         &mut self,
         user_provided_debug_adapter_path: Option<String>,
+        worktree: &Worktree,
     ) -> Result<String> {
         if let Some(binary_path) = user_provided_debug_adapter_path {
+            return Ok(binary_path);
+        }
+
+        if let Some(binary_path) = worktree.which(Self::DEBUG_ADAPTER_BINARY_NAME) {
             return Ok(binary_path);
         }
 
