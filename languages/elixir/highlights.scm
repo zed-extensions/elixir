@@ -134,6 +134,12 @@
   (quoted_content) @embedded
   (#eq? @string.special "H"))
 
+; Hologram HOLO template sigil
+(sigil
+  (sigil_name) @string.special
+  (quoted_content) @embedded
+  (#eq? @string.special "HOLO"))
+
 ; Function/macro calls (with parentheses)
 (call
   target: [
