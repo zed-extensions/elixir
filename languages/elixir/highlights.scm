@@ -140,6 +140,12 @@
   (quoted_content) @embedded
   (#eq? @string.special "HOLO"))
 
+; Jason sigils
+(sigil
+  (sigil_name) @string.special
+  (quoted_content) @embedded
+  (#any-of? @string.special "J" "j"))
+
 ; Function/macro calls (with parentheses)
 (call
   target: [
