@@ -7,25 +7,54 @@
   ";"
 ] @punctuation.delimiter
 
-; Brackets
-[
-  "("
-  ")"
-  "["
-  "]"
-  "{"
-  "}"
-  "<<"
-  ">>"
-] @punctuation.bracket
+; Tuples
+(tuple
+  "{" @punctuation.bracket
+  "}" @punctuation.bracket)
 
-; Comments
-(comment) @comment
+; Maps
+(map
+  "{" @punctuation.bracket
+  "}" @punctuation.bracket)
 
 ; String interpolations
 (interpolation
   "#{" @punctuation.special
-  "}" @punctuation.special) @embedded
+  "}" @punctuation.special)
+
+; Lists
+(list
+  "[" @punctuation.bracket
+  "]" @punctuation.bracket)
+
+; Access calls
+(access_call
+  "[" @punctuation.bracket
+  "]" @punctuation.bracket)
+
+; Blocks
+(block
+  "(" @punctuation.bracket
+  ")" @punctuation.bracket)
+
+; Function argument blocks
+(arguments
+  "(" @punctuation.bracket
+  ")" @punctuation.bracket)
+
+; Capture operator blocks
+(unary_operator
+  operator: "&"
+  "(" @punctuation.bracket
+  ")" @punctuation.bracket)
+
+; Bitstrings
+(bitstring
+  "<<" @punctuation.bracket
+  ">>" @punctuation.bracket)
+
+; Comments
+(comment) @comment
 
 ; Escape characters (e.g. `\s`, `\n`)
 (escape_sequence) @string.escape
@@ -105,46 +134,39 @@
   operator: _ @operator)
 
 ; Sigils
-(sigil
-  (sigil_name) @string.special
-  quoted_start: _ @string.special
-  quoted_end: _ @string.special) @string.special
+(sigil) @string.special
 
 ; Sigil modifiers
 (sigil_modifiers) @label @modifier
 
 ; String/charlist sigils
 (sigil
-  (sigil_name) @_sigil_name @string
-  quoted_start: _ @string
-  quoted_end: _ @string
+  (sigil_name) @_sigil_name
   (#any-of? @_sigil_name "C" "c" "S" "s")) @string
 
 ; Regex sigils
 (sigil
-  (sigil_name) @_sigil_name @string.regex
-  quoted_start: _ @string.regex
-  quoted_end: _ @string.regex
+  (sigil_name) @_sigil_name
   (sigil_modifiers)? @keyword.operator.regex
   (#any-of? @_sigil_name "R" "r")) @string.regex
 
 ; Phoenix HEEx template sigil
 (sigil
-  (sigil_name) @string.special
+  (sigil_name) @_sigil_name
   (quoted_content) @embedded
-  (#eq? @string.special "H"))
+  (#eq? @_sigil_name "H"))
 
 ; Hologram HOLO template sigil
 (sigil
-  (sigil_name) @string.special
+  (sigil_name) @_sigil_name
   (quoted_content) @embedded
-  (#eq? @string.special "HOLO"))
+  (#eq? @_sigil_name "HOLO"))
 
 ; Jason sigils
 (sigil
-  (sigil_name) @string.special
+  (sigil_name) @_sigil_name
   (quoted_content) @embedded
-  (#any-of? @string.special "J" "j"))
+  (#any-of? @_sigil_name "J" "j"))
 
 ; Function/macro calls (with parentheses)
 (call
@@ -323,12 +345,10 @@
     target: (identifier) @_identifier @comment.doc
     (arguments
       [
-        (string) @comment.doc
-        (boolean) @comment.doc
+        (string)
+        (boolean)
         (sigil
-          (sigil_name) @_sigil_name @comment.doc
-          quoted_start: _ @comment.doc
-          quoted_end: _ @comment.doc
+          (sigil_name) @_sigil_name
           (#any-of? @_sigil_name "S" "s"))
       ] @comment.doc))
   (#any-of? @_identifier "deprecated" "moduledoc" "typedoc" "shortdoc" "doc"))
