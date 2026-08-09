@@ -318,13 +318,12 @@
     (arguments
       [
         (string) @comment.doc
-        (charlist) @comment.doc
         (boolean) @comment.doc
         (sigil
           (sigil_name) @_sigil_name @comment.doc
           quoted_start: _ @comment.doc
           quoted_end: _ @comment.doc
-          (#any-of? @_sigil_name "C" "c" "S" "s"))
+          (#any-of? @_sigil_name "S" "s"))
       ] @comment.doc))
   (#any-of? @_identifier "deprecated" "moduledoc" "typedoc" "shortdoc" "doc"))
 

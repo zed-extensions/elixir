@@ -58,8 +58,6 @@
       [
         (string
           (quoted_content) @comment.inside)
-        (charlist
-          (quoted_content) @comment.inside)
         (sigil
           (quoted_content) @comment.inside)
         (_) @comment.inside
