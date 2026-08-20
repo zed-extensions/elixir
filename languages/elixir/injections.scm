@@ -42,6 +42,13 @@
   (#eq? @_sigil_name "H")
   (#set! injection.language "heex"))
 
+; Hologram HOLO template sigil
+((sigil
+  (sigil_name) @_sigil_name
+  (quoted_content) @injection.content)
+  (#eq? @_sigil_name "HOLO")
+  (#set! injection.language "holo"))
+
 ; Jason sigils
 ((sigil
   (sigil_name) @_sigil_name
