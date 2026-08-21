@@ -20,6 +20,10 @@
     "end" @end)
   (anonymous_function
     "end" @end)
+  (sigil
+    (sigil_name) @_sigil_name
+    quoted_end: _ @end
+    (#any-of? @_sigil_name "W" "w"))
 ] @indent
 
 ; These have no end delimiter that can be captured,

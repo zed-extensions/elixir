@@ -144,6 +144,20 @@
   (sigil_name) @_sigil_name
   (#any-of? @_sigil_name "C" "c" "S" "s")) @string
 
+; Wordlist sigils
+(sigil
+  (sigil_name) @_sigil_name
+  (quoted_content)? @string
+  (#any-of? @_sigil_name "W" "w")) @punctuation.bracket
+
+; Wordlist sigils with atom modifier
+(sigil
+  (sigil_name) @_sigil_name
+  (quoted_content) @string.special.symbol
+  (sigil_modifiers) @_sigil_modifier
+  (#eq? @_sigil_modifier "a")
+  (#any-of? @_sigil_name "W" "w"))
+
 ; Regex sigils
 (sigil
   (sigil_name) @_sigil_name
