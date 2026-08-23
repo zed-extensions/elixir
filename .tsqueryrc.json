@@ -110,6 +110,7 @@
       "comment": "Captures block comments",
       "comment.inclusive": "Captures line comments",
       "elixir": "Captures Elixir expressions",
+      "function": "Captures function identifiers",
       "heex": "Captures HEEx templates",
       "identifier": "Captures all identifiers (i.e. variables, functions, atoms, keywords, and module attributes)",
       "quoted_atom": "Captures quoted atoms",
@@ -117,6 +118,7 @@
       "sigil_round": "Captures sigils using round bracket delimiters",
       "sigil_square": "Captures sigils using square bracket delimiters",
       "sigil_quote": "Captures sigils using quote mark delimiters",
+      "slot": "Captures HEEx slot identifiers",
       "string": "Captures strings"
     },
     "redactions": {

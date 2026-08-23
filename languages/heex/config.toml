@@ -18,6 +18,7 @@ tab_size = 2
 scope_opt_in_language_servers = [
     "elixir-ls",
     "expert",
+    "dexter",
     "next-ls",
     "lexical",
     "tailwindcss-language-server",
@@ -27,6 +28,7 @@ scope_opt_in_language_servers = [
 opt_into_language_servers = [
     "elixir-ls",
     "expert",
+    "dexter",
     "next-ls",
     "lexical",
 ]
@@ -35,5 +37,15 @@ opt_into_language_servers = [
 completion_query_characters = ["-"]
 opt_into_language_servers = ["tailwindcss-language-server"]
 
-[overrides.identifier]
-word_characters = ["!", "?", "@"]
+[overrides.function]
+word_characters = ["!", "?"]
+opt_into_language_servers = [
+    "elixir-ls",
+    "expert",
+    "dexter",
+    "next-ls",
+    "lexical",
+]
+
+[overrides.slot]
+word_characters = ["!", "?"]
