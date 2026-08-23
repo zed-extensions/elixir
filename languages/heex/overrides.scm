@@ -7,14 +7,15 @@
   (quoted_attribute_value)
 ] @string
 
-; Function and slot identifiers
-[
-  (function)
-  (slot_name)
-] @identifier
+; Function identifiers
+(function) @function
+
+; Slot identifiers
+(slot_name) @slot
 
 ; Elixir expressions
 [
   (expression)
   (directive)
+  (component_name)
 ] @elixir
