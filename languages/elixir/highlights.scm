@@ -323,13 +323,13 @@
 
 ; Module attributes
 (unary_operator
-  operator: "@" @attribute
+  operator: "@" @constant
   operand: [
-    (identifier) @attribute
+    (identifier) @constant
     (call
-      target: (identifier) @attribute)
-    (boolean) @attribute
-    (nil) @attribute
+      target: (identifier) @constant)
+    (boolean) @constant
+    (nil) @constant
   ])
 
 ; Doc attributes
