@@ -86,10 +86,10 @@
       "variant": "Captures variants"
     },
     "indents": {
-      "start": "Captures starting brackets and braces",
-      "end": "Captures closing brackets and braces",
-      "indent": "Captures entire arrays and objects for indentation",
-      "outdent": "Captures entire arrays and objects for outdentation"
+      "start": "Moves the start of an `@indent` range to the end of the captured node",
+      "end": "Moves the end of an `@indent` range to the start of the captured node",
+      "indent": "Defines an indentation range using the captured node",
+      "outdent": "Ends the innermost indentation range at the start of the captured node"
     },
     "injections": {
       "injection.language": "Captures the language identifier for a code block",
