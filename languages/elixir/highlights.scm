@@ -186,15 +186,10 @@
 (call
   target: [
     (identifier) @function
-    ((identifier) @comment.unused
-      (#match? @comment.unused "^_"))
     (dot
-      right: [
-        (identifier) @function
-        ((identifier) @comment.unused
-          (#match? @comment.unused "^_"))
-      ])
-  ])
+      right: (identifier) @function)
+  ]
+  (#not-match? @function "^_"))
 
 ; Map dot field access
 (call
@@ -228,16 +223,11 @@
   operator: "&"
   operand: [
     (identifier) @function
-    ((identifier) @comment.unused
-      (#match? @comment.unused "^_"))
     (binary_operator
-      left: [
-        (identifier) @function
-        ((identifier) @comment.unused
-          (#match? @comment.unused "^_"))
-      ]
+      left: (identifier) @function
       operator: "/")
-  ])
+  ]
+  (#not-match? @function "^_"))
 
 ; Capture remote Erlang functions
 (unary_operator
@@ -272,11 +262,8 @@
 ; Piping into a local function/macro that has no parentheses
 (binary_operator
   operator: "|>"
-  right: [
-    (identifier) @function
-    ((identifier) @comment.unused
-      (#match? @comment.unused "^_"))
-  ])
+  right: (identifier) @function
+  (#not-match? @function "^_"))
 
 ; Piping into a remote Erlang function
 (binary_operator
@@ -303,20 +290,26 @@
   (arguments
     [
       (identifier) @function
-      ((identifier) @comment.unused
-        (#match? @comment.unused "^_"))
       (binary_operator
-        left: [
-          (identifier) @function
-          ((identifier) @comment.unused
-            (#match? @comment.unused "^_"))
-        ]
+        left: (identifier) @function
         operator: "when")
       ; Targets the function definition for piping in the Kernel module
       (binary_operator
         operator: "|>"
         right: (identifier) @variable)
+      (binary_operator
+        left: (binary_operator
+          operator: "|>"
+          right: (identifier) @variable))
+      (binary_operator
+        left: (binary_operator
+          left: (binary_operator
+            operator: "|>"
+            right: (identifier) @variable))
+        operator: "when")
     ])
+  (#not-match? @variable "^_")
+  (#not-match? @function "^_")
   (#any-of? @keyword.definition
     "def" "defp" "defdelegate" "defguard" "defguardp" "defmacro" "defmacrop" "defn" "defnp"
     "deftransform" "deftransformp"))
@@ -375,23 +368,14 @@
     (arguments
       [
         (identifier) @function
-        ((identifier) @comment.unused
-          (#match? @comment.unused "^_"))
         (binary_operator
-          left: [
-            (identifier) @function
-            ((identifier) @comment.unused
-              (#match? @comment.unused "^_"))
-          ])
+          left: (identifier) @function)
         (binary_operator
           left: (binary_operator
-            left: [
-              (identifier) @function
-              ((identifier) @comment.unused
-                (#match? @comment.unused "^_"))
-            ])
+            left: (identifier) @function)
           operator: "when")
       ]))
+  (#not-match? @function "^_")
   (#any-of? @type.spec "type" "typep" "opaque" "spec" "callback" "macrocallback"))
 
 ; Special identifiers
