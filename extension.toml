@@ -16,6 +16,11 @@ languages = [
     "EEx",
     "HEEx",
 ]
+opt_in_languages = [
+    "Elixir",
+    "EEx",
+    "HEEx",
+]
 
 [language_servers.expert.language_ids]
 "Elixir" = "elixir"
@@ -42,6 +47,11 @@ languages = [
     "EEx",
     "HEEx",
 ]
+opt_in_languages = [
+    "Elixir",
+    "EEx",
+    "HEEx",
+]
 
 [language_servers.dexter.language_ids]
 "Elixir" = "elixir"
@@ -55,6 +65,11 @@ languages = [
     "EEx",
     "HEEx",
 ]
+opt_in_languages = [
+    "Elixir",
+    "EEx",
+    "HEEx",
+]
 
 [language_servers.next-ls.language_ids]
 "Elixir" = "elixir"
@@ -64,6 +79,11 @@ languages = [
 [language_servers.lexical]
 name = "Lexical"
 languages = [
+    "Elixir",
+    "EEx",
+    "HEEx",
+]
+opt_in_languages = [
     "Elixir",
     "EEx",
     "HEEx",
