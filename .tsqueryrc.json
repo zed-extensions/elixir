@@ -190,6 +190,10 @@
     }
   },
   "valid_directives": {
+    "downcase": {
+      "description": "Downcases text from a capture",
+      "parameters": [{ "type": "capture" }]
+    },
     "set": {
       "description": "Associates key-value metadata with a pattern or capture",
       "parameters": [
